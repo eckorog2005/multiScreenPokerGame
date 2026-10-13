@@ -1,6 +1,8 @@
 node_modules/
+dist/
 coverage/
 *.log
+*.local
 .env
 .DS_Store
 .idea/

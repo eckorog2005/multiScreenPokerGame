@@ -1,21 +1,18 @@
 {
-  "name": "multi-screen-poker-game-server",
-  "version": "0.1.0",
-  "description": "Game server for a multi-screen poker game",
+  "name": "multi-screen-poker",
+  "private": true,
+  "description": "Multi-screen poker game: a shared table screen plus each player's phone as their private hand",
   "type": "module",
-  "main": "src/server.js",
+  "packageManager": "pnpm@12.11.2",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "node --watch src/server.js",
-    "test": "node --test"
+    "dev": "pnpm --parallel --recursive run dev",
+    "build": "pnpm --recursive run build",
+    "test": "pnpm --recursive run test",
+    "lint": "pnpm --recursive run lint"
   },
   "engines": {
     "node": ">=22"
   },
   "author": "Roger Lamb",
-  "license": "MIT",
-  "dependencies": {
-    "@fastify/static": "^10.1.6",
-    "fastify": "^5.12.5"
-  }
+  "license": "MIT"
 }

@@ -1,0 +1,21 @@
+{
+  "name": "server",
+  "version": "0.1.0",
+  "description": "Game server for a multi-screen poker game",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "author": "Roger Lamb",
+  "license": "MIT",
+  "dependencies": {
+    "@fastify/static": "^10.1.6",
+    "fastify": "^5.12.5"
+  }
+}
