@@ -15,7 +15,7 @@ Early scaffold. The server serves a placeholder page and static assets. The clie
 
 ## Done
 
-- [x] 2016-05: Initial CherryPy (Python) server skeleton; separate Ember CLI 2.5.1 client repo (`multiScreenPokerGameClient`, scaffold only, no app code).
+- [x] 2016-05: Initial CherryPy (Python) server skeleton; separate Ember CLI 2.5.1 client repo (scaffold only, no app code; since deleted).
 - [x] 2026-10-12: Ported the server to Node.js + Fastify 5 (ESM, Node >= 22).
   - `src/app.js` builds the app (`buildApp()`), so tests can use `app.inject()` without opening a port.
   - `src/server.js` starts it on `PORT` (default `9090`) and `HOST` (default `0.0.0.0`).
@@ -23,7 +23,7 @@ Early scaffold. The server serves a placeholder page and static assets. The clie
   - Tests use the built-in `node:test` runner.
 - [x] 2026-10-12: Merged into a monorepo.
   - Server moved to `apps/server`; npm lockfile replaced by a root `pnpm-lock.yaml`.
-  - The Ember 2.5 client was dropped (its toolchain doesn't run on current Node, and it had no app code). Its git history stays in the old `multiScreenPokerGameClient` repo.
+  - The Ember 2.5 client was dropped (its toolchain doesn't run on current Node, and it had no app code).
   - New `apps/client`: Vite + React + TypeScript, Vitest + Testing Library (jsdom), oxlint.
   - Vite dev proxy: `/api` and `/ws` → `SERVER_URL` (default `http://localhost:9090`).
 
@@ -43,7 +43,7 @@ Early scaffold. The server serves a placeholder page and static assets. The clie
 - [ ] Card art and styling that works on a TV/laptop for the table and a phone for players.
 - [ ] Playwright end-to-end test: one table and two phones in separate browser contexts.
 - [ ] Linting for the server (it has none yet; the client uses oxlint) and formatting; CI to run lint, tests and build.
-- [ ] Rename the GitHub repo (e.g. `multiScreenPoker`) and archive `multiScreenPokerGameClient`.
+- [ ] Rename the GitHub repo (e.g. `multiScreenPoker`).
 
 ## Open questions
 
