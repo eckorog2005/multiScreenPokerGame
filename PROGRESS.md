@@ -29,6 +29,8 @@ Early scaffold. The server serves a placeholder page and static assets. The clie
 
 ## Next up
 
+The v1 plan is now specified in `.scratch/holdem-v1/` (`spec.md`, plus one issue per file under `issues/`). Those issues replace the list below wherever the two differ.
+
 - [ ] Real-time transport: `@fastify/websocket` on `/ws`, plus a client hook that connects, reconnects and resyncs state.
 - [ ] Shared protocol: a `packages/protocol` workspace package with the message types both apps import.
 - [ ] Rooms: create or join a game with a short room code; tell table clients and player clients apart.
@@ -47,9 +49,9 @@ Early scaffold. The server serves a placeholder page and static assets. The clie
 
 ## Open questions
 
-- Which poker variants to support beyond Hold'em?
-- Is state in memory enough, or do games need to survive a restart?
-- Should the server move to TypeScript to share types directly with the client?
+- ~~Which poker variants to support beyond Hold'em?~~ None for now: No-Limit Hold'em only, with no abstractions for other variants.
+- ~~Is state in memory enough, or do games need to survive a restart?~~ In memory is enough (see `docs/adr/0001-v1-scope-same-room-play-money.md`).
+- ~~Should the server move to TypeScript to share types directly with the client?~~ Yes. Convert it before writing game logic. Message types go in `packages/protocol`, and the rules go in a pure `packages/engine`.
 
 ## Running
 
