@@ -36,6 +36,11 @@ Early scaffold. The server serves a placeholder page and static assets. The clie
   - Both apps import the packages' `.ts` source directly (`exports` points at `src/index.ts`), so Vite and `node --watch` pick up changes with no rebuild, and the server's `dist/` build loads them through Node's type stripping.
   - So package code must use erasable syntax only (no enums, namespaces or parameter properties) and `.ts` extensions on relative imports. Their `build` script only typechecks.
   - Each package uses Vitest and oxlint. The placeholder `name` export and the `workspace-packages` tests in both apps go away once real exports exist.
+- [x] 2026-10-15: Engine cards, shuffle and hand evaluation (issue 03).
+  - `newDeck()` builds 52 `Card`s (`{ rank, suit }`, ranks `2`–`9`, `T`, `J`, `Q`, `K`, `A`; suits `c`, `d`, `h`, `s`).
+  - `shuffle(items, rng?)` is a Fisher–Yates shuffle that returns a new array. `Rng` returns a whole number below a limit; the default `cryptoRng` uses `crypto.getRandomValues` with rejection sampling.
+  - `evaluateHand(holeCards, board)` takes the best five of 2 Hole Cards plus 3–5 Board cards and returns a `HandValue` (category, best five cards, a description such as "Two Pair, Kings and Sevens", and a `strength` for comparing). `compareHands(a, b)` returns 1, -1 or 0.
+  - Engine tests write cards as strings with the `cards('As Kd')` helper in `src/test-cards.ts`.
 
 ## Next up
 
