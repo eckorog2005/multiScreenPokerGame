@@ -168,6 +168,12 @@ importers:
 
   apps/client:
     dependencies:
+      '@poker/engine':
+        specifier: workspace:*
+        version: link:../../packages/engine
+      '@poker/protocol':
+        specifier: workspace:*
+        version: link:../../packages/protocol
       react:
         specifier: ^19.2.8
         version: 19.3.0
@@ -214,6 +220,12 @@ importers:
       '@fastify/static':
         specifier: ^10.1.6
         version: 10.1.6
+      '@poker/engine':
+        specifier: workspace:*
+        version: link:../../packages/engine
+      '@poker/protocol':
+        specifier: workspace:*
+        version: link:../../packages/protocol
       fastify:
         specifier: ^5.12.5
         version: 5.12.5
@@ -227,6 +239,30 @@ importers:
       typescript:
         specifier: ~6.0.2
         version: 6.0.3
+
+  packages/engine:
+    devDependencies:
+      oxlint:
+        specifier: ^1.81.0
+        version: 1.87.0
+      typescript:
+        specifier: ~6.0.2
+        version: 6.0.3
+      vitest:
+        specifier: ^5.0.3
+        version: 5.0.3(@types/node@24.19.2)(jsdom@30.1.2)(vite@8.3.4(@types/node@24.19.2))
+
+  packages/protocol:
+    devDependencies:
+      oxlint:
+        specifier: ^1.81.0
+        version: 1.87.0
+      typescript:
+        specifier: ~6.0.2
+        version: 6.0.3
+      vitest:
+        specifier: ^5.0.3
+        version: 5.0.3(@types/node@24.19.2)(jsdom@30.1.2)(vite@8.3.4(@types/node@24.19.2))
 
 packages:
 

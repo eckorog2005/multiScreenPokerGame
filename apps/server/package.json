@@ -18,6 +18,8 @@
   "license": "MIT",
   "dependencies": {
     "@fastify/static": "^10.1.6",
+    "@poker/engine": "workspace:*",
+    "@poker/protocol": "workspace:*",
     "fastify": "^5.12.5"
   },
   "devDependencies": {
