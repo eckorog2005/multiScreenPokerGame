@@ -4,9 +4,9 @@ Multi-screen poker game: a shared "table" screen plus each player's phone as the
 
 ## Layout
 
-pnpm workspace (Node >= 22):
+pnpm workspace (Node >= 22.18):
 
-- `apps/server`: game server, Node.js + Fastify 5 (ESM), port `9090`.
+- `apps/server`: game server, TypeScript + Fastify 5 (ESM), port `9090`.
 - `apps/client`: table and player screens, React 19 + Vite + TypeScript, dev server on port `5173`.
 
 ## Status
@@ -26,6 +26,10 @@ Early scaffold. The server serves a placeholder page and static assets. The clie
   - The Ember 2.5 client was dropped (its toolchain doesn't run on current Node, and it had no app code).
   - New `apps/client`: Vite + React + TypeScript, Vitest + Testing Library (jsdom), oxlint.
   - Vite dev proxy: `/api` and `/ws` → `SERVER_URL` (default `http://localhost:9090`).
+- [x] 2026-10-15: Converted the server to TypeScript.
+  - `dev` and `test` run the `.ts` sources directly with Node's built-in type stripping (Node >= 22.18), so source imports use `.ts` extensions and only erasable syntax is allowed.
+  - `build` typechecks `src` and `test`, then emits `src` to `dist/` (rewriting imports to `.js`); `start` runs `dist/server.js`.
+  - The server has an oxlint `lint` script, like the client.
 
 ## Next up
 
@@ -44,14 +48,14 @@ The v1 plan is now specified in `.scratch/holdem-v1/` (`spec.md`, plus one issue
 - [ ] Serve the built client from Fastify (`apps/client/dist`) so production is one process on one origin.
 - [ ] Card art and styling that works on a TV/laptop for the table and a phone for players.
 - [ ] Playwright end-to-end test: one table and two phones in separate browser contexts.
-- [ ] Linting for the server (it has none yet; the client uses oxlint) and formatting; CI to run lint, tests and build.
+- [ ] Formatting; CI to run lint, tests and build.
 - [ ] Rename the GitHub repo (e.g. `multiScreenPoker`).
 
 ## Open questions
 
 - ~~Which poker variants to support beyond Hold'em?~~ None for now: No-Limit Hold'em only, with no abstractions for other variants.
 - ~~Is state in memory enough, or do games need to survive a restart?~~ In memory is enough (see `docs/adr/0001-v1-scope-same-room-play-money.md`).
-- ~~Should the server move to TypeScript to share types directly with the client?~~ Yes. Convert it before writing game logic. Message types go in `packages/protocol`, and the rules go in a pure `packages/engine`.
+- ~~Should the server move to TypeScript to share types directly with the client?~~ Yes (done). Message types go in `packages/protocol`, and the rules go in a pure `packages/engine`.
 
 ## Running
 

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildApp } from '../src/app.js';
+import { buildApp } from '../src/app.ts';
 
 test('GET / serves the index page', async (t) => {
   const app = buildApp();
@@ -9,7 +9,7 @@ test('GET / serves the index page', async (t) => {
   const res = await app.inject({ method: 'GET', url: '/' });
 
   assert.equal(res.statusCode, 200);
-  assert.match(res.headers['content-type'], /text\/html/);
+  assert.match(res.headers['content-type'] ?? '', /text\/html/);
   assert.match(res.body, /\/static\/css\/style\.css/);
 });
 
@@ -30,5 +30,5 @@ test('GET /static/css/style.css serves static assets', async (t) => {
   const res = await app.inject({ method: 'GET', url: '/static/css/style.css' });
 
   assert.equal(res.statusCode, 200);
-  assert.match(res.headers['content-type'], /text\/css/);
+  assert.match(res.headers['content-type'] ?? '', /text\/css/);
 });
