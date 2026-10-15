@@ -42,10 +42,10 @@ export function evaluateHand(holeCards: readonly Card[], board: readonly Card[])
   return best!;
 }
 
-export function compareHands(a: HandValue, b: HandValue): number {
+export function compareHands(a: HandValue, b: HandValue): -1 | 0 | 1 {
   for (let i = 0; i < a.strength.length; i++) {
     const diff = a.strength[i]! - b.strength[i]!;
-    if (diff !== 0) return Math.sign(diff);
+    if (diff !== 0) return diff > 0 ? 1 : -1;
   }
   return 0;
 }

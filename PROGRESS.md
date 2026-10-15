@@ -48,7 +48,7 @@ The v1 plan is now specified in `.scratch/holdem-v1/` (`spec.md`, plus one issue
 
 - [ ] Real-time transport: `@fastify/websocket` on `/ws`, plus a client hook that connects, reconnects and resyncs state.
 - [ ] Rooms: create or join a game with a short room code; tell table clients and player clients apart.
-- [ ] Card engine: deck, shuffle (crypto RNG), deal. Pure module with unit tests (could live in `packages/` so the client can reuse card types).
+- [x] Card engine: deck, shuffle (crypto RNG). Dealing comes with the Hand state machine (issue 04).
 - [ ] Texas Hold'em rules: blinds, betting rounds, side pots, hand evaluation, showdown.
 - [ ] Client routes: landing (host a table / join a game), `/table`, `/play`.
 - [ ] Join flow: enter a room code on the phone and/or scan a QR code shown on the table screen.

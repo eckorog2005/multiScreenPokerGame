@@ -1,34 +1,33 @@
 import { expect, test } from 'vitest';
 import { cryptoRng, newDeck, shuffle, type Rng } from './index.ts';
+import { cardCodes } from './test-cards.ts';
 
 function seededRng(seed: number): Rng {
   let state = seed;
   return (maxExclusive) => {
-    state = (state * 1103515245 + 12345) % 2 ** 31;
+    state = (state * 48271) % 2147483647;
     return state % maxExclusive;
   };
 }
 
-const key = (cards: { rank: string; suit: string }[]) => cards.map((c) => c.rank + c.suit).join(' ');
-
 test('the same injected RNG gives the same order', () => {
-  expect(key(shuffle(newDeck(), seededRng(7)))).toBe(key(shuffle(newDeck(), seededRng(7))));
-  expect(key(shuffle(newDeck(), seededRng(7)))).not.toBe(key(shuffle(newDeck(), seededRng(8))));
+  expect(cardCodes(shuffle(newDeck(), seededRng(7)))).toBe(cardCodes(shuffle(newDeck(), seededRng(7))));
+  expect(cardCodes(shuffle(newDeck(), seededRng(7)))).not.toBe(cardCodes(shuffle(newDeck(), seededRng(8))));
 });
 
 test('shuffling returns a reordering of the same cards and leaves the input alone', () => {
   const deck = newDeck();
-  const before = key(deck);
+  const before = cardCodes(deck);
   const shuffled = shuffle(deck, seededRng(1));
-  expect(key(deck)).toBe(before);
-  expect(key(shuffled)).not.toBe(before);
-  expect(key([...shuffled].sort(byKey))).toBe(key([...deck].sort(byKey)));
+  expect(cardCodes(deck)).toBe(before);
+  expect(cardCodes(shuffled)).not.toBe(before);
+  expect(sortedCodes(cardCodes(shuffled))).toBe(sortedCodes(before));
 });
 
 test('shuffles with the crypto RNG by default', () => {
   const shuffled = shuffle(newDeck());
-  expect(new Set(shuffled.map((c) => c.rank + c.suit)).size).toBe(52);
-  expect(key(shuffled)).not.toBe(key(newDeck()));
+  expect(new Set(cardCodes(shuffled).split(' ')).size).toBe(52);
+  expect(cardCodes(shuffled)).not.toBe(cardCodes(newDeck()));
 });
 
 test('the crypto RNG returns whole numbers below the limit', () => {
@@ -38,6 +37,6 @@ test('the crypto RNG returns whole numbers below the limit', () => {
   }
 });
 
-function byKey(a: { rank: string; suit: string }, b: { rank: string; suit: string }) {
-  return (a.rank + a.suit).localeCompare(b.rank + b.suit);
+function sortedCodes(codes: string): string {
+  return codes.split(' ').sort().join(' ');
 }
