@@ -1,0 +1,20 @@
+{
+  "name": "@poker/protocol",
+  "private": true,
+  "version": "0.0.0",
+  "description": "WebSocket message types shared by the server and client",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "lint": "oxlint"
+  },
+  "devDependencies": {
+    "oxlint": "^1.81.0",
+    "typescript": "~6.0.2",
+    "vitest": "^5.0.3"
+  }
+}

@@ -8,6 +8,8 @@ pnpm workspace (Node >= 22.18):
 
 - `apps/server`: game server, TypeScript + Fastify 5 (ESM), port `9090`.
 - `apps/client`: table and player screens, React 19 + Vite + TypeScript, dev server on port `5173`.
+- `packages/engine` (`@poker/engine`): pure game rules, no I/O.
+- `packages/protocol` (`@poker/protocol`): WebSocket message types.
 
 ## Status
 
@@ -30,13 +32,16 @@ Early scaffold. The server serves a placeholder page and static assets. The clie
   - `dev` and `test` run the `.ts` sources directly with Node's built-in type stripping (Node >= 22.18), so source imports use `.ts` extensions and only erasable syntax is allowed.
   - `build` typechecks `src` and `test`, then emits `src` to `dist/` (rewriting imports to `.js`); `start` runs `dist/server.js`.
   - The server has an oxlint `lint` script, like the client.
+- [x] 2026-10-15: Scaffolded `packages/engine` and `packages/protocol`.
+  - Both apps import the packages' `.ts` source directly (`exports` points at `src/index.ts`), so Vite and `node --watch` pick up changes with no rebuild, and the server's `dist/` build loads them through Node's type stripping.
+  - So package code must use erasable syntax only (no enums, namespaces or parameter properties) and `.ts` extensions on relative imports. Their `build` script only typechecks.
+  - Each package uses Vitest and oxlint. The placeholder `name` export and the `workspace-packages` tests in both apps go away once real exports exist.
 
 ## Next up
 
 The v1 plan is now specified in `.scratch/holdem-v1/` (`spec.md`, plus one issue per file under `issues/`). Those issues replace the list below wherever the two differ.
 
 - [ ] Real-time transport: `@fastify/websocket` on `/ws`, plus a client hook that connects, reconnects and resyncs state.
-- [ ] Shared protocol: a `packages/protocol` workspace package with the message types both apps import.
 - [ ] Rooms: create or join a game with a short room code; tell table clients and player clients apart.
 - [ ] Card engine: deck, shuffle (crypto RNG), deal. Pure module with unit tests (could live in `packages/` so the client can reuse card types).
 - [ ] Texas Hold'em rules: blinds, betting rounds, side pots, hand evaluation, showdown.
