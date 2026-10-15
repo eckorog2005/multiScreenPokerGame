@@ -3,19 +3,26 @@
   "version": "0.1.0",
   "description": "Game server for a multi-screen poker game",
   "type": "module",
-  "main": "src/server.js",
+  "main": "dist/server.js",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "node --watch src/server.js",
-    "test": "node --test"
+    "start": "node dist/server.js",
+    "dev": "node --watch src/server.ts",
+    "build": "tsc && tsc -p tsconfig.build.json",
+    "test": "node --test \"test/**/*.test.ts\"",
+    "lint": "oxlint"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.18"
   },
   "author": "Roger Lamb",
   "license": "MIT",
   "dependencies": {
     "@fastify/static": "^10.1.6",
     "fastify": "^5.12.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "oxlint": "^1.81.0",
+    "typescript": "~6.0.2"
   }
 }
