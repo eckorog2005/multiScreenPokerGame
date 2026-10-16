@@ -296,7 +296,7 @@ describe('ending without a Showdown', () => {
 
     const shown = play(done, total, 'c show');
     expect(shown.result!.shownBy).toEqual(['c']);
-    expect(errorOf(done, 'b', 'show')).toBe('hand-over');
+    expect(errorOf(done, 'b', 'show')).toBe('illegal-action');
     expect(errorOf(done, 'c', 'check')).toBe('hand-over');
   });
 

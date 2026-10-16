@@ -8,9 +8,7 @@ export type HandPlayer = {
   readonly seat: number;
   readonly stack: number;
   readonly holeCards: readonly [Card, Card];
-  /** Chips put in during the current betting round. */
   readonly bet: number;
-  /** Chips put in during the whole Hand. */
   readonly committed: number;
   readonly folded: boolean;
   readonly allIn: boolean;
@@ -50,7 +48,6 @@ export type HandResult = {
 };
 
 export type HandState = {
-  /** In seat order. */
   readonly players: readonly HandPlayer[];
   readonly button: number;
   readonly smallBlind: number;
@@ -77,7 +74,6 @@ export type StartHandInput = {
   readonly button: number;
   readonly smallBlind: number;
   readonly bigBlind: number;
-  /** Cards are dealt from the front. */
   readonly deck: readonly Card[];
 };
 
@@ -194,8 +190,9 @@ export function applyAction(state: HandState, playerId: string, action: Action):
 function applyShow(state: HandState, playerId: string, action: Action): HandState | RuleError {
   const result = state.result!;
   const player = state.players.find((p) => p.id === playerId);
-  if (action.type !== 'show' || result.showdown || !player || player.folded) {
-    return fail('hand-over', 'The Hand is over');
+  if (action.type !== 'show') return fail('hand-over', 'The Hand is over');
+  if (result.showdown || !player || player.folded) {
+    return fail('illegal-action', 'Only the winner of an uncontested Hand can show');
   }
   if (result.shownBy.includes(playerId)) return state;
   return { ...state, result: { ...result, shownBy: [...result.shownBy, playerId] } };
@@ -214,17 +211,16 @@ function clone(state: HandState): Draft {
   };
 }
 
-/** Players ordered clockwise starting with the first Seat after `seat`. */
 function clockwise<T extends { seat: number }>(players: readonly T[], seat: number): T[] {
   return [...players.filter((p) => p.seat > seat), ...players.filter((p) => p.seat <= seat)];
 }
 
 function postBlind(draft: Draft, seat: number, amount: number): void {
   const player = draft.players.find((p) => p.seat === seat)!;
-  moveChips(player, player.bet + Math.min(amount, player.stack));
+  setBet(player, player.bet + Math.min(amount, player.stack));
 }
 
-function moveChips(player: Player, total: number): void {
+function setBet(player: Player, total: number): void {
   const extra = total - player.bet;
   player.stack -= extra;
   player.bet = total;
@@ -234,7 +230,7 @@ function moveChips(player: Player, total: number): void {
 
 function commitTo(draft: Draft, player: Player, total: number): void {
   const increment = total - draft.currentBet;
-  moveChips(player, total);
+  setBet(player, total);
   if (increment > 0) {
     if (increment >= draft.minRaise) {
       draft.minRaise = increment;
@@ -265,7 +261,6 @@ function legalActionsFor(draft: Draft, player: Player): LegalActions {
   };
 }
 
-/** Moves the Hand forward until a Player must act or the Hand is complete. */
 function settle(draft: Draft, fromSeat: number): void {
   for (;;) {
     const live = draft.players.filter((p) => !p.folded);
