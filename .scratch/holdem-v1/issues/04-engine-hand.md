@@ -1,6 +1,6 @@
 # 04: Engine — the Hand state machine
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 03
 
 ## What
