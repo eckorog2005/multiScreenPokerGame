@@ -241,6 +241,10 @@ importers:
         version: 6.0.3
 
   packages/engine:
+    dependencies:
+      '@poker/protocol':
+        specifier: workspace:*
+        version: link:../protocol
     devDependencies:
       oxlint:
         specifier: ^1.81.0

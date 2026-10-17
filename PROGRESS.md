@@ -45,6 +45,9 @@ Early scaffold. The server serves a placeholder page and static assets. The clie
   - Pure commands over an immutable `GameState`, each returning the new state or a typed `GameError` (`isGameError`): `join`, `leave`, `removePlayer`, `claimHost`, `setStartingStack`, `setBlinds`, `setTurnTimer`, `setSittingOut`, `rebuy`, `dealHand`, `act`, `foldFor`, plus `standings`.
   - `dealHand` takes an optional `rng`; the first Hand must be dealt by the Host. Chips are written back to Players when a Hand completes.
   - `foldPlayer` in `hand.ts` folds a Player out of turn so a removal can't stall a Hand.
+- [x] 2026-10-16: Protocol messages and per-screen views (issue 06).
+  - `@poker/protocol` defines `ClientMessage` (intents, incl. `HostCommand`), `ServerMessage`, and the view types. It stays types-only; its own copies of `Card` etc. must stay structurally in sync with the engine.
+  - `tableView(game)` and `playerView(game, playerId)` in `packages/engine/src/views.ts` project a `GameState` into those views. Hole Cards appear only for the Player themself, at Showdown (live hands only) or when an uncontested winner shows; the deck is never included. `playerView` throws `RangeError` for an unknown Player, so the server must check first.
 
 ## Next up
 
