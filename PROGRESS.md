@@ -41,6 +41,10 @@ Early scaffold. The server serves a placeholder page and static assets. The clie
   - `shuffle(items, rng?)` is a Fisher–Yates shuffle that returns a new array. `Rng` returns a whole number below a limit; the default `cryptoRng` uses `crypto.getRandomValues` with rejection sampling.
   - `evaluateHand(holeCards, board)` takes the best five of 2 Hole Cards plus 3–5 Board cards and returns a `HandValue` (category, best five cards, a description such as "Two Pair, Kings and Sevens", and a `strength` for comparing). `compareHands(a, b)` returns 1, -1 or 0.
   - Engine tests write cards as strings with the `cards('As Kd')` helper in `src/test-cards.ts`.
+- [x] 2026-10-16: Engine Game-level rules (issue 05), in `packages/engine/src/game.ts`.
+  - Pure commands over an immutable `GameState`, each returning the new state or a typed `GameError` (`isGameError`): `join`, `leave`, `removePlayer`, `claimHost`, `setStartingStack`, `setBlinds`, `setTurnTimer`, `setSittingOut`, `rebuy`, `dealHand`, `act`, `foldFor`, plus `standings`.
+  - `dealHand` takes an optional `rng`; the first Hand must be dealt by the Host. Chips are written back to Players when a Hand completes.
+  - `foldPlayer` in `hand.ts` folds a Player out of turn so a removal can't stall a Hand.
 
 ## Next up
 

@@ -1,6 +1,6 @@
 # 05: Engine — Game-level rules
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 04
 
 ## What
