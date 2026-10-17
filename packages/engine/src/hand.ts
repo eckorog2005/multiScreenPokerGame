@@ -187,6 +187,20 @@ export function applyAction(state: HandState, playerId: string, action: Action):
   return draft;
 }
 
+/** Folds a Player whether or not it is their turn, e.g. when the Host removes them. */
+export function foldPlayer(state: HandState, playerId: string): HandState | RuleError {
+  if (state.street === 'complete') return fail('hand-over', 'The Hand is over');
+  const player = state.players.find((p) => p.id === playerId);
+  if (!player) return fail('illegal-action', `${playerId} is not in this Hand`);
+  if (player.folded) return state;
+
+  const draft = clone(state);
+  draft.players.find((p) => p.id === playerId)!.folded = true;
+  const turnSeat = state.players.find((p) => p.id === state.toAct)!.seat;
+  settle(draft, state.toAct === playerId ? turnSeat : turnSeat - 1);
+  return draft;
+}
+
 function applyShow(state: HandState, playerId: string, action: Action): HandState | RuleError {
   const result = state.result!;
   const player = state.players.find((p) => p.id === playerId);
@@ -304,7 +318,7 @@ function dealStreet(draft: Draft): void {
 function collectBets(draft: Draft): void {
   const byBet = [...draft.players].sort((a, b) => b.bet - a.bet);
   const [top, second] = byBet as [Player, Player];
-  if (top.bet > second.bet) {
+  if (!top.folded && top.bet > second.bet) {
     const uncalled = top.bet - second.bet;
     top.bet -= uncalled;
     top.committed -= uncalled;
@@ -366,7 +380,7 @@ function buildPots(players: readonly Player[]): { amount: number; eligible: stri
     (a, b) => a - b,
   );
   let previous = 0;
-  return levels.map((level) => {
+  const pots = levels.map((level) => {
     const amount = players.reduce(
       (sum, p) => sum + Math.min(p.committed, level) - Math.min(p.committed, previous),
       0,
@@ -375,4 +389,13 @@ function buildPots(players: readonly Player[]): { amount: number; eligible: stri
     previous = level;
     return { amount, eligible };
   });
+
+  // Chips from Players who folded out of turn can exceed what any live Player put in.
+  const uncovered = players.reduce((sum, p) => sum + p.committed, 0) - pots.reduce((sum, pot) => sum + pot.amount, 0);
+  if (uncovered > 0) {
+    const last = pots.at(-1);
+    if (last) last.amount += uncovered;
+    else pots.push({ amount: uncovered, eligible: players.filter((p) => !p.folded).map((p) => p.id) });
+  }
+  return pots;
 }
