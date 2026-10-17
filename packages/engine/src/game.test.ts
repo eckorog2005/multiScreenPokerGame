@@ -147,11 +147,16 @@ describe('settings', () => {
     game = deal(game);
     expect(game.hand!.bigBlind).toBe(20);
 
+    game = foldAround(game);
     game = ok(setBlinds(game, 'a', 25, 50));
     expect(game.hand!.bigBlind).toBe(20);
-    game = deal(foldAround(game));
+    game = deal(game);
     expect(game.hand!.smallBlind).toBe(25);
     expect(game.hand!.bigBlind).toBe(50);
+  });
+
+  test('blinds cannot change during a Hand', () => {
+    expect(errorOf(setBlinds(deal(tableOf('a', 'b', 'c')), 'a', 25, 50))).toBe('hand-in-progress');
   });
 
   test('blinds must be whole numbers with the big blind at least the small blind', () => {
@@ -262,6 +267,11 @@ describe('Rebuy', () => {
     expect(after.players.find((p) => p.id === 'b')!.rebuys).toBe(1);
   });
 
+  test('rejected after leaving', () => {
+    const game = ok(leave(withChips(tableOf('a', 'b'), 'b', 0), 'b'));
+    expect(errorOf(rebuy(game, 'b'))).toBe('not-seated');
+  });
+
   test('rejected with Chips', () => {
     expect(errorOf(rebuy(tableOf('a', 'b'), 'a'))).toBe('cannot-rebuy');
   });
@@ -362,9 +372,15 @@ describe('removal', () => {
     expect(chips(game, 'b2')).toBe(1000);
   });
 
-  test('a removed identity cannot rejoin', () => {
-    const game = ok(removePlayer(tableOf('a', 'b'), 'a', 'b'));
-    expect(errorOf(join(game, { playerId: 'b', name: 'b', seat: 2 }))).toBe('removed-player');
+  test('a removed Player can join back with the same id as a new Player', () => {
+    let game = foldAround(deal(tableOf('a', 'b', 'c')));
+    game = ok(removePlayer(game, 'a', 'b'));
+    game = ok(join(game, { playerId: 'b', name: 'b', seat: 2 }));
+    expect(game.players.find((p) => p.id === 'b')).toMatchObject({ chips: 1000, rebuys: 0 });
+    expect(standings(game).filter((r) => r.playerId === 'b').map((r) => [r.net, r.removed])).toEqual([
+      [0, false],
+      [-5, true],
+    ]);
   });
 
   test('mid-Hand removal counts Chips left behind in the pot as lost', () => {

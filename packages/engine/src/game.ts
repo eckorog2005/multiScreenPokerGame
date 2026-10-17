@@ -52,7 +52,6 @@ export type GameErrorCode =
   | 'seat-taken'
   | 'already-seated'
   | 'not-seated'
-  | 'removed-player'
   | 'invalid-setting'
   | 'game-started'
   | 'hand-in-progress'
@@ -94,9 +93,6 @@ export function join(game: GameState, input: JoinInput): GameState | GameError {
   const { playerId, seat } = input;
   if (!Number.isInteger(seat) || seat < 1 || seat > MAX_SEATS) {
     return fail('invalid-seat', `Seat must be from 1 to ${MAX_SEATS}`);
-  }
-  if (game.removed.some((r) => r.playerId === playerId)) {
-    return fail('removed-player', 'A removed Player must rejoin with a new identity');
   }
   const existing = findPlayer(game, playerId);
   if (existing?.seat != null) return fail('already-seated', 'Seats cannot be changed');
@@ -185,6 +181,7 @@ export function setBlinds(
 ): GameState | GameError {
   const denied = requireHost(game, actorId);
   if (denied) return denied;
+  if (handActive(game)) return fail('hand-in-progress', 'Blinds can only change between Hands');
   if (!isPositiveInteger(smallBlind) || !isPositiveInteger(bigBlind) || bigBlind < smallBlind) {
     return fail('invalid-setting', 'Blinds must be positive whole numbers, big blind at least the small blind');
   }
@@ -209,6 +206,7 @@ export function setSittingOut(game: GameState, playerId: string, sittingOut: boo
 export function rebuy(game: GameState, playerId: string): GameState | GameError {
   const player = findPlayer(game, playerId);
   if (!player) return unknownPlayer(playerId);
+  if (player.seat === null) return fail('not-seated', 'Rejoin before taking a Rebuy');
   if (handActive(game)) return fail('hand-in-progress', 'Rebuy is only possible between Hands');
   if (player.chips > 0) return fail('cannot-rebuy', 'Rebuy needs 0 Chips');
   const players = game.players.map((p) =>
