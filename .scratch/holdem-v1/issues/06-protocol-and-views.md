@@ -1,6 +1,6 @@
 # 06: Protocol messages and per-screen views
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 05
 
 ## What
