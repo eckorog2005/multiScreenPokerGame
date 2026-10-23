@@ -11,11 +11,15 @@ import { standings } from './game.ts';
 import type { GamePlayer, GameState } from './game.ts';
 import type { HandPlayer, HandState } from './hand.ts';
 
-export function tableView(game: GameState): TableView {
-  return { role: 'table', ...baseView(game) };
+type IsConnected = (playerId: string) => boolean;
+
+const allConnected: IsConnected = () => true;
+
+export function tableView(game: GameState, isConnected: IsConnected = allConnected): TableView {
+  return { role: 'table', ...baseView(game, isConnected) };
 }
 
-export function playerView(game: GameState, playerId: string): PlayerView {
+export function playerView(game: GameState, playerId: string, isConnected: IsConnected = allConnected): PlayerView {
   const player = game.players.find((p) => p.id === playerId);
   if (!player) throw new RangeError(`No Player ${playerId} in this Game`);
 
@@ -34,7 +38,7 @@ export function playerView(game: GameState, playerId: string): PlayerView {
 
   return {
     role: 'player',
-    ...baseView(game),
+    ...baseView(game, isConnected),
     you: {
       playerId,
       name: player.name,
@@ -50,20 +54,20 @@ export function playerView(game: GameState, playerId: string): PlayerView {
   };
 }
 
-function baseView(game: GameState): GameViewBase {
+function baseView(game: GameState, isConnected: IsConnected): GameViewBase {
   return {
     hostId: game.hostId,
     startingStack: game.startingStack,
     smallBlind: game.smallBlind,
     bigBlind: game.bigBlind,
     turnTimerSeconds: game.turnTimerSeconds,
-    seats: seatViews(game),
+    seats: seatViews(game, isConnected),
     hand: handView(game),
     standings: standings(game),
   };
 }
 
-function seatViews(game: GameState): SeatView[] {
+function seatViews(game: GameState, isConnected: IsConnected): SeatView[] {
   return game.players
     .filter((p): p is GamePlayer & { seat: number } => p.seat !== null)
     .sort((a, b) => a.seat - b.seat)
@@ -78,6 +82,7 @@ function seatViews(game: GameState): SeatView[] {
         isHost: game.hostId === p.id,
         isButton: game.button === p.seat,
         sittingOut: p.sittingOut,
+        connected: isConnected(p.id),
         inHand: inHand !== undefined,
         folded: inHand?.folded ?? false,
         allIn: inHand?.allIn ?? false,

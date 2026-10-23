@@ -1,6 +1,6 @@
 # 07: Real-time Game server
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 01, 06
 
 ## What
