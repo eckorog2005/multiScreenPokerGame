@@ -4,7 +4,7 @@ Multi-screen poker game: a shared "table" screen plus each player's phone as the
 
 ## Layout
 
-pnpm workspace (Node >= 22.18):
+pnpm workspace (Node >= 24):
 
 - `apps/server`: game server, TypeScript + Fastify 5 (ESM), port `9090`.
 - `apps/client`: table and player screens, React 19 + Vite + TypeScript, dev server on port `5173`.
@@ -58,7 +58,7 @@ The engine (rules, Game, views) and the WebSocket server (create, join, resume, 
 
 - [x] 2026-10-23: CI and formatting (issue 15).
   - Prettier (`.prettierrc.json`, single quotes, width 120) formats the whole repo. The reformat commit is listed in `.git-blame-ignore-revs`.
-  - `.github/workflows/ci.yml` runs on pushes and PRs to `main`: a "Format and lint" job on Node 24, plus "Build and test" on Node 22 and 24. A newer push to a PR cancels the older run.
+  - `.github/workflows/ci.yml` runs on pushes and PRs to `main`: a "Format and lint" job and a "Build and test" job, both on Node 24 (the Node 22 job was dropped on 2026-10-24, when `engines` moved to Node >= 24). A newer push to a PR cancels the older run.
   - The shared `.github/actions/setup` action enables pnpm through corepack and caches the pnpm store by lockfile hash.
   - `pnpm check` runs the same steps locally.
 
