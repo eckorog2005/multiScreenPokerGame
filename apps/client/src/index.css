@@ -61,3 +61,145 @@ label input {
   font-size: 1.25rem;
   padding: 8px;
 }
+
+.seated {
+  box-sizing: border-box;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.seated header h1,
+.seated header p {
+  margin: 0;
+}
+
+.seated.my-turn {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  overflow-y: auto;
+  background: color-mix(in srgb, gold 25%, Canvas);
+}
+
+.your-turn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.your-turn h2 {
+  margin: 0 0 8px;
+  font-size: 2rem;
+  text-align: center;
+}
+
+.banner {
+  margin: -16px -16px 0;
+  padding: 8px 16px;
+  background: orange;
+  color: black;
+  text-align: center;
+}
+
+.board-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.board-summary p {
+  margin: 0;
+}
+
+.card {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 4.5rem;
+  height: 6.3rem;
+  margin-right: 8px;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  background: white;
+  color: black;
+  font-size: 1.75rem;
+}
+
+.card.small {
+  width: 2.4rem;
+  height: 3.3rem;
+  margin-right: 4px;
+  font-size: 1rem;
+}
+
+.card.red {
+  color: #c00;
+}
+
+.card.back {
+  background: repeating-linear-gradient(45deg, #24508f 0 6px, #2f66b3 6px 12px);
+}
+
+.hole-cards {
+  align-self: center;
+  padding: 8px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.actions,
+.player-controls,
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.actions > button,
+.player-controls button,
+.bet-controls .primary {
+  flex: 1 1 8rem;
+  min-height: 48px;
+  font-size: 1.1rem;
+}
+
+.bet-controls {
+  flex: 1 1 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.presets button {
+  flex: 1;
+  min-height: 40px;
+}
+
+.slider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.slider input {
+  flex: 1;
+}
+
+.slider button {
+  min-width: 48px;
+  min-height: 40px;
+  font-size: 1.25rem;
+}
+
+.player-controls {
+  margin-top: auto;
+}
+
+.player-controls [aria-pressed='true'] {
+  outline: 3px solid gold;
+}

@@ -342,3 +342,27 @@ test('take-seat before joining is a not-joined error', async (t) => {
 
   assert.equal((await phone.nextOfType('error')).error, 'not-joined');
 });
+
+test('sit-out sets the Player Sitting Out and back again', async (t) => {
+  const { url } = await start(t);
+  const { table, phone } = await seatedPlayer(url);
+
+  phone.send({ type: 'sit-out', sittingOut: true });
+
+  assert.equal((await phone.nextOfType('player-view')).view.you.sittingOut, true);
+  let tableView = await table.nextOfType('table-view');
+  while (!tableView.view.seats[0]?.sittingOut) tableView = await table.nextOfType('table-view');
+
+  phone.send({ type: 'sit-out', sittingOut: false });
+
+  assert.equal((await phone.nextOfType('player-view')).view.you.sittingOut, false);
+});
+
+test('rebuy reaches the engine, which refuses it while the Player has Chips', async (t) => {
+  const { url } = await start(t);
+  const { phone } = await seatedPlayer(url);
+
+  phone.send({ type: 'rebuy' });
+
+  assert.equal((await phone.nextOfType('error')).error, 'cannot-rebuy');
+});

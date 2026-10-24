@@ -13,7 +13,7 @@ pnpm workspace (Node >= 24):
 
 ## Status
 
-The engine (rules, Game, views) and the WebSocket server (create, join, resume, leave, deal) are done. The join flow works end to end: the Table creates a Game and shows its Game Code, QR code and Seats, and Players join from `/play`. The server loop (auto-deal, turn timer, disconnects, Host claim, cleanup) is done; the play screens (issues 11–13) aren't built yet. In development the client proxies `/api` and `/ws` to the server.
+The engine (rules, Game, views) and the WebSocket server (create, join, resume, leave, deal) are done. The join flow works end to end: the Table creates a Game and shows its Game Code, QR code and Seats, and Players join from `/play`. The server loop (auto-deal, turn timer, disconnects, Host claim, cleanup) is done; the Player Device can play a Hand (issue 11); the Table view and Host controls (issues 12–13) aren't built yet. In development the client proxies `/api` and `/ws` to the server.
 
 ## Done
 
@@ -51,7 +51,7 @@ The engine (rules, Game, views) and the WebSocket server (create, join, resume, 
 
 - [x] 2026-10-23: Real-time Game server (issue 07).
   - `@fastify/websocket` on `/ws`, wired in `apps/server/src/ws.ts`; the in-memory `Registry` of Games is in `registry.ts`. Messages follow `ClientMessage`/`ServerMessage` in `@poker/protocol`.
-  - Handled so far: `create-game`, `open-table`, `join`, `resume`, and `host` → `deal-hand`. Other messages (`action`, `sit-out`, other Host commands, ...) are ignored until issues 10, 11 and 13.
+  - Handled so far: `create-game`, `open-table`, `join`, `resume`, and `host` → `deal-hand`. Other messages (`action`, `sit-out`, other Host commands, ...) were ignored until issues 10, 11 and 13.
   - After every change each Table view gets `table-view` and each connected Player Device gets its own `player-view`. The server stores each Player's `disconnectedAt` and `hasConnectedScreen(game)` for issue 10's timers.
   - `SeatView` gained `connected`; the engine's `tableView`/`playerView` take an optional `isConnected` predicate (default: everyone connected) that the server supplies.
   - Server tests drive real WebSocket clients (`test/ws-client.ts`) against `buildApp()`.
@@ -84,6 +84,13 @@ The engine (rules, Game, views) and the WebSocket server (create, join, resume, 
   - `claim-host` works once the Host has been disconnected for 60 s (`cannot-claim-host` before). A Game with no connected screens for 30 minutes is discarded.
   - Views gained `paused`, `hand.turnTimeLeftMs` (time left when the view was sent), `you.canFoldFor` and `you.canClaimHost`. The engine's `tableView`/`playerView` now take a `ViewContext` instead of a bare `isConnected`.
   - The server also handles `action` and `set-turn-timer` now.
+
+- [x] 2026-10-24: Player Device play screen (issue 11).
+  - Once seated, `/play` renders `src/play/Seated.tsx`: Chips, the amount to call, a compact Board and pot, Hole Cards that show only while held (`HoleCards.tsx`), and only the legal actions from the view.
+  - Bet controls: Min, ½ pot, Pot and All-in presets plus a slider with ±1 big blind steps; `src/play/bet.ts` holds the math (whole Chips, clamped to `minRaiseTo`/`maxRaiseTo`, pot raise = `currentBet + pot + toCall`).
+  - On the Player's turn the phone vibrates and the screen switches to a full-screen "Your turn" state. `useWakeLock()` keeps the screen awake while the Player is in a Game and re-requests the lock when the page is visible again.
+  - Sit Out toggle, Leave (enabled between Hands or after folding), Rebuy (at 0 Chips between Hands), Show cards (after winning uncontested) and a reconnecting banner. The server now handles `sit-out` and `rebuy`.
+  - Cards render through `src/CardFace.tsx`; client tests share view builders in `src/test-views.ts`.
 
 ## Next up
 

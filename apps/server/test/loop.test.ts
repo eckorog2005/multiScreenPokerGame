@@ -209,8 +209,10 @@ test("on a disconnected Player's turn the Game waits and the Host can fold for t
   const [ann, bob] = players;
   ann!.client.send({ type: 'host', command: { type: 'deal-hand' } });
   const first = await tableViewWhere(table, dealt);
-  if (first.hand!.toAct === ann!.playerId) ann!.client.send({ type: 'action', action: { type: 'call' } });
-  await tableViewWhere(table, (v) => v.hand!.toAct === bob!.playerId);
+  if (first.hand!.toAct === ann!.playerId) {
+    ann!.client.send({ type: 'action', action: { type: 'call' } });
+    await tableViewWhere(table, (v) => v.hand!.toAct === bob!.playerId);
+  }
   await settle(ann!.client);
 
   ann!.client.send({ type: 'host', command: { type: 'fold-for' } });

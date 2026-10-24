@@ -3,7 +3,14 @@ import { useSearchParams } from 'react-router';
 import { MAX_SEATS } from '@poker/engine';
 import type { ErrorCode, GameSeatsResponse, PlayerView } from '@poker/protocol';
 import { loadToken } from '../connection/token-store.ts';
-import { useConnection, type ServerError } from '../connection/use-connection.ts';
+import {
+  useConnection,
+  type Connection,
+  type ConnectionStatus,
+  type ServerError,
+} from '../connection/use-connection.ts';
+import Seated from '../play/Seated.tsx';
+import { useWakeLock } from '../play/use-wake-lock.ts';
 
 type Seats = GameSeatsResponse['seats'];
 
@@ -63,7 +70,7 @@ function PlayerDevice() {
     };
   }, [step, code]);
 
-  if (view?.role === 'player') return <Joined view={view} notice={error ? notice : null} send={send} />;
+  if (view?.role === 'player') return <Joined view={view} status={status} notice={error ? notice : null} send={send} />;
   if (rejoining) {
     return (
       <main>
@@ -133,37 +140,26 @@ function PlayerDevice() {
 
 function Joined({
   view,
+  status,
   notice,
   send,
 }: {
   view: PlayerView;
+  status: ConnectionStatus;
   notice: string | null;
-  send: ReturnType<typeof useConnection>['send'];
+  send: Connection['send'];
 }) {
   const { you } = view;
-  if (you.seat === null) {
-    return (
-      <main>
-        <h1>Pick a Seat</h1>
-        <p>
-          Welcome back, {you.name}. You have {you.chips} Chips.
-        </p>
-        {notice && <p role="alert">{notice}</p>}
-        <SeatPicker seats={view.seats} onPick={(seat) => send({ type: 'take-seat', seat })} />
-      </main>
-    );
-  }
+  useWakeLock();
+  if (you.seat !== null) return <Seated view={view} status={status} notice={notice} send={send} />;
   return (
     <main>
-      <h1>{you.name}</h1>
+      <h1>Pick a Seat</h1>
       <p>
-        Seat {you.seat} · {you.chips} Chips{you.isHost && ' · Host'}
+        Welcome back, {you.name}. You have {you.chips} Chips.
       </p>
-      <p>Waiting for the Host to deal…</p>
       {notice && <p role="alert">{notice}</p>}
-      <button type="button" onClick={() => send({ type: 'leave' })}>
-        Leave
-      </button>
+      <SeatPicker seats={view.seats} onPick={(seat) => send({ type: 'take-seat', seat })} />
     </main>
   );
 }
