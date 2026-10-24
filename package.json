@@ -8,11 +8,17 @@
     "dev": "pnpm --parallel --recursive run dev",
     "build": "pnpm --recursive run build",
     "test": "pnpm --recursive run test",
-    "lint": "pnpm --recursive run lint"
+    "lint": "pnpm --recursive run lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "pnpm format:check && pnpm lint && pnpm build && pnpm test"
   },
   "engines": {
     "node": ">=22.18"
   },
   "author": "Roger Lamb",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "prettier": "^3.9.10"
+  }
 }
