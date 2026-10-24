@@ -57,6 +57,7 @@ const playerView = (you: Partial<YouView>, seats: SeatView[]): PlayerView => ({
   smallBlind: 5,
   bigBlind: 10,
   turnTimerSeconds: null,
+  paused: false,
   seats,
   hand: null,
   standings: [],
@@ -71,6 +72,8 @@ const playerView = (you: Partial<YouView>, seats: SeatView[]): PlayerView => ({
     holeCards: null,
     toCall: 0,
     legal: null,
+    canFoldFor: false,
+    canClaimHost: false,
     ...you,
   },
 });

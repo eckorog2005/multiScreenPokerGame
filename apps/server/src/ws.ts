@@ -1,12 +1,35 @@
 import type { FastifyInstance } from 'fastify';
 import fastifyWebsocket from '@fastify/websocket';
 import { randomUUID } from 'node:crypto';
-import { dealHand, isGameError, join, leave, playerView, tableView, takeSeat } from '@poker/engine';
-import type { ClientMessage, ErrorCode, ServerMessage } from '@poker/protocol';
+import {
+  act,
+  claimHost,
+  foldFor,
+  isGameError,
+  join,
+  leave,
+  playerView,
+  setTurnTimer,
+  tableView,
+  takeSeat,
+} from '@poker/engine';
+import type { GameState } from '@poker/engine';
+import type { ClientMessage, ErrorCode, HostCommand, ServerMessage } from '@poker/protocol';
+import type { Clock } from './clock.ts';
+import { createLoop, isConnected, type Loop } from './loop.ts';
 import type { Registry, Screen, ServerGame } from './registry.ts';
 
-export async function registerRealtime(app: FastifyInstance, { registry }: { registry: Registry }) {
+export type RealtimeOptions = { registry: Registry; clock: Clock; autoDealDelayMs: number };
+
+export async function registerRealtime(app: FastifyInstance, { registry, clock, autoDealDelayMs }: RealtimeOptions) {
   await app.register(fastifyWebsocket);
+
+  const loop = createLoop({
+    clock,
+    autoDealDelayMs,
+    publish: (game) => broadcast(game, loop),
+    discard: (game) => registry.discard(game),
+  });
 
   app.get('/ws', { websocket: true }, (socket) => {
     let session: Session | null = null;
@@ -14,23 +37,35 @@ export async function registerRealtime(app: FastifyInstance, { registry }: { reg
     const fail = (error: ErrorCode, message: string) => screen.send(errorMessage(error, message));
 
     const handle = (message: ClientMessage) => {
-      if (message.type === 'host' || message.type === 'leave' || message.type === 'take-seat') {
+      if (
+        message.type === 'host' ||
+        message.type === 'leave' ||
+        message.type === 'take-seat' ||
+        message.type === 'claim-host' ||
+        message.type === 'action'
+      ) {
         if (!session?.playerId || session.game.players.get(session.playerId)?.screen !== screen) {
           return fail('not-joined', 'Join or resume a Game first');
         }
         const { game, playerId } = session;
-        let next;
+        let next: GameState | Failure;
         if (message.type === 'leave') {
           next = leave(game.state, playerId);
         } else if (message.type === 'take-seat') {
           next = takeSeat(game.state, playerId, message.seat);
+        } else if (message.type === 'action') {
+          next = act(game.state, playerId, message.action);
+        } else if (message.type === 'claim-host') {
+          if (!loop.hostClaimable(game)) {
+            return fail('cannot-claim-host', 'The Host can be claimed after 60 seconds disconnected');
+          }
+          next = claimHost(game.state, playerId);
         } else {
-          if (message.command?.type !== 'deal-hand') return fail('bad-message', 'Unsupported Host command');
-          next = dealHand(game.state, { by: playerId });
+          next = hostCommand(game, playerId, message.command, loop);
         }
-        if (isGameError(next)) return fail(next.error, next.message);
+        if ('error' in next) return fail(next.error, next.message);
         game.state = next;
-        return broadcast(game);
+        return loop.changed(game);
       }
       if (session) return fail('bad-message', 'This socket is already attached to a Game');
 
@@ -39,7 +74,7 @@ export async function registerRealtime(app: FastifyInstance, { registry }: { reg
         game.tables.add(screen);
         session = { game, playerId: null };
         screen.send({ type: 'game-created', code: game.code } satisfies ServerMessage);
-        return broadcast(game);
+        return loop.changed(game);
       }
       if (message.type !== 'open-table' && message.type !== 'join' && message.type !== 'resume') return;
 
@@ -70,7 +105,7 @@ export async function registerRealtime(app: FastifyInstance, { registry }: { reg
           token: player.token,
         } satisfies ServerMessage);
       }
-      broadcast(game);
+      loop.changed(game);
     };
 
     socket.on('message', (data) => {
@@ -88,15 +123,38 @@ export async function registerRealtime(app: FastifyInstance, { registry }: { reg
       const { game, playerId } = session;
       game.tables.delete(screen);
       const player = playerId ? game.players.get(playerId) : undefined;
-      if (player?.screen !== screen) return;
-      player.screen = null;
-      player.disconnectedAt = Date.now();
-      broadcast(game);
+      if (player?.screen === screen) {
+        player.screen = null;
+        player.disconnectedAt = clock.now();
+      }
+      loop.changed(game);
     });
   });
 }
 
 type Session = { game: ServerGame; playerId: string | null };
+
+type Failure = { error: ErrorCode; message: string };
+
+function hostCommand(game: ServerGame, playerId: string, command: HostCommand, loop: Loop): GameState | Failure {
+  if (command?.type === 'deal-hand') return loop.deal(game, playerId);
+  if (command?.type === 'set-turn-timer') return setTurnTimer(game.state, playerId, command.seconds);
+  if (command?.type === 'fold-for') {
+    const toAct = game.state.hand?.toAct;
+    if (toAct && game.state.hostId === playerId && isConnected(game)(toAct)) {
+      return { error: 'cannot-fold-for', message: 'Only a disconnected Player can be folded for' };
+    }
+    return foldFor(game.state, playerId);
+  }
+  if (command?.type === 'set-paused') {
+    if (game.state.hostId !== playerId) return { error: 'not-host', message: 'Only the Host can do that' };
+    if (typeof command.paused !== 'boolean')
+      return { error: 'invalid-setting', message: 'paused must be true or false' };
+    game.paused = command.paused;
+    return game.state;
+  }
+  return { error: 'bad-message', message: 'Unsupported Host command' };
+}
 
 function parseMessage(data: unknown): ClientMessage | null {
   try {
@@ -114,18 +172,15 @@ function errorMessage(error: ErrorCode, message: string): ServerMessage {
   return { type: 'error', error, message };
 }
 
-function isConnected(game: ServerGame) {
-  return (playerId: string) => game.players.get(playerId)?.screen != null;
-}
-
-function broadcast(game: ServerGame) {
+function broadcast(game: ServerGame, loop: Loop) {
+  const context = loop.viewContext(game);
   for (const table of game.tables) {
-    table.send({ type: 'table-view', view: tableView(game.state, isConnected(game)) } satisfies ServerMessage);
+    table.send({ type: 'table-view', view: tableView(game.state, context) } satisfies ServerMessage);
   }
   for (const player of game.players.values()) {
     player.screen?.send({
       type: 'player-view',
-      view: playerView(game.state, player.id, isConnected(game)),
+      view: playerView(game.state, player.id, context),
     } satisfies ServerMessage);
   }
 }

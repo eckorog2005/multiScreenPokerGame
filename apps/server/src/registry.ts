@@ -1,4 +1,5 @@
 import { createGame, type GameState } from '@poker/engine';
+import { Timer, type Clock } from './clock.ts';
 
 const CODE_LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 const CODE_LENGTH = 4;
@@ -12,11 +13,21 @@ export type ServerPlayer = {
   disconnectedAt: number | null;
 };
 
+export type GameTimers = {
+  readonly turn: Timer;
+  readonly deal: Timer;
+  readonly hostClaim: Timer;
+  readonly cleanup: Timer;
+};
+
 export type ServerGame = {
   readonly code: string;
   state: GameState;
+  /** The Host paused auto-dealing between Hands. */
+  paused: boolean;
   readonly tables: Set<Screen>;
   readonly players: Map<string, ServerPlayer>;
+  readonly timers: GameTimers;
 };
 
 export function hasConnectedScreen(game: ServerGame): boolean {
@@ -25,15 +36,38 @@ export function hasConnectedScreen(game: ServerGame): boolean {
 
 export class Registry {
   readonly #games = new Map<string, ServerGame>();
+  readonly #clock: Clock;
+
+  constructor(clock: Clock) {
+    this.#clock = clock;
+  }
 
   create(): ServerGame {
-    const game: ServerGame = { code: this.#newCode(), state: createGame(), tables: new Set(), players: new Map() };
+    const timers: GameTimers = {
+      turn: new Timer(this.#clock),
+      deal: new Timer(this.#clock),
+      hostClaim: new Timer(this.#clock),
+      cleanup: new Timer(this.#clock),
+    };
+    const game: ServerGame = {
+      code: this.#newCode(),
+      state: createGame(),
+      paused: false,
+      tables: new Set(),
+      players: new Map(),
+      timers,
+    };
     this.#games.set(game.code, game);
     return game;
   }
 
   get(code: string): ServerGame | undefined {
     return this.#games.get(code);
+  }
+
+  discard(game: ServerGame): void {
+    for (const timer of Object.values(game.timers)) timer.clear();
+    this.#games.delete(game.code);
   }
 
   #newCode(): string {

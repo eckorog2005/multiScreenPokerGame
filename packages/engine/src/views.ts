@@ -13,13 +13,23 @@ import type { HandPlayer, HandState } from './hand.ts';
 
 type IsConnected = (playerId: string) => boolean;
 
+/** What the server's loop knows beyond the GameState. */
+export type ViewContext = {
+  readonly isConnected?: IsConnected;
+  readonly paused?: boolean;
+  readonly turnTimeLeftMs?: number | null;
+  /** The Host has been disconnected long enough for another Player to claim the role. */
+  readonly hostClaimable?: boolean;
+};
+
 const allConnected: IsConnected = () => true;
 
-export function tableView(game: GameState, isConnected: IsConnected = allConnected): TableView {
-  return { role: 'table', ...baseView(game, isConnected) };
+export function tableView(game: GameState, context: ViewContext = {}): TableView {
+  return { role: 'table', ...baseView(game, context) };
 }
 
-export function playerView(game: GameState, playerId: string, isConnected: IsConnected = allConnected): PlayerView {
+export function playerView(game: GameState, playerId: string, context: ViewContext = {}): PlayerView {
+  const isConnected = context.isConnected ?? allConnected;
   const player = game.players.find((p) => p.id === playerId);
   if (!player) throw new RangeError(`No Player ${playerId} in this Game`);
 
@@ -36,9 +46,12 @@ export function playerView(game: GameState, playerId: string, isConnected: IsCon
         }
       : null;
 
+  const isHost = game.hostId === playerId;
+  const handActive = hand !== null && hand.street !== 'complete';
+
   return {
     role: 'player',
-    ...baseView(game, isConnected),
+    ...baseView(game, context),
     you: {
       playerId,
       name: player.name,
@@ -46,23 +59,26 @@ export function playerView(game: GameState, playerId: string, isConnected: IsCon
       chips: chipsOf(game, player, inHand),
       rebuys: player.rebuys,
       sittingOut: player.sittingOut,
-      isHost: game.hostId === playerId,
+      isHost,
       holeCards: inHand?.holeCards ?? null,
       toCall: live ? Math.min(Math.max(hand.currentBet - inHand.bet, 0), inHand.stack) : 0,
       legal,
+      canFoldFor: isHost && handActive && hand.toAct !== null && !isConnected(hand.toAct),
+      canClaimHost: (context.hostClaimable ?? false) && !isHost && player.seat !== null,
     },
   };
 }
 
-function baseView(game: GameState, isConnected: IsConnected): GameViewBase {
+function baseView(game: GameState, context: ViewContext): GameViewBase {
   return {
     hostId: game.hostId,
     startingStack: game.startingStack,
     smallBlind: game.smallBlind,
     bigBlind: game.bigBlind,
     turnTimerSeconds: game.turnTimerSeconds,
-    seats: seatViews(game, isConnected),
-    hand: handView(game),
+    paused: context.paused ?? false,
+    seats: seatViews(game, context.isConnected ?? allConnected),
+    hand: handView(game, context.turnTimeLeftMs ?? null),
     standings: standings(game),
   };
 }
@@ -91,7 +107,7 @@ function seatViews(game: GameState, isConnected: IsConnected): SeatView[] {
     });
 }
 
-function handView(game: GameState): HandView | null {
+function handView(game: GameState, turnTimeLeftMs: number | null): HandView | null {
   const hand = game.hand;
   if (!hand) return null;
   const result: ResultView | null = hand.result && {
@@ -110,6 +126,7 @@ function handView(game: GameState): HandView | null {
     pot: hand.players.reduce((sum, p) => sum + p.committed, 0),
     currentBet: hand.currentBet,
     toAct: hand.toAct,
+    turnTimeLeftMs: hand.toAct === null ? null : turnTimeLeftMs,
     result,
   };
 }
