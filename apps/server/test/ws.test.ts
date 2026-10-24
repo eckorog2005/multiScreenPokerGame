@@ -299,3 +299,46 @@ test('a socket replaced by resume can no longer act as the Player', async (t) =>
 
   assert.equal((await phone.nextOfType('error')).error, 'not-joined');
 });
+
+test('a Player who leaves frees their Seat and can take an empty one after a reload', async (t) => {
+  const { url } = await start(t);
+  const { table, phone, code, token, playerId } = await seatedPlayer(url);
+
+  phone.send({ type: 'leave' });
+  const left = await phone.nextOfType('player-view');
+  assert.equal(left.view.you.seat, null);
+  let tableView = await table.nextOfType('table-view');
+  while (tableView.view.seats.length > 0) tableView = await table.nextOfType('table-view');
+  await phone.close();
+
+  const reloaded = await connect(url);
+  reloaded.send({ type: 'resume', code, token });
+  await reloaded.nextOfType('player-view');
+  reloaded.send({ type: 'take-seat', seat: 5 });
+
+  const seated = await reloaded.nextOfType('player-view');
+  assert.deepEqual([seated.view.you.playerId, seated.view.you.seat, seated.view.you.chips], [playerId, 5, 1000]);
+});
+
+test('take-seat into a taken Seat is an error', async (t) => {
+  const { url } = await start(t);
+  const { phone, code } = await seatedPlayer(url);
+  const bob = await connect(url);
+  bob.send({ type: 'join', code, name: 'Bob', seat: 2 });
+  await bob.nextOfType('player-view');
+  phone.send({ type: 'leave' });
+  await phone.nextOfType('player-view');
+
+  phone.send({ type: 'take-seat', seat: 2 });
+
+  assert.equal((await phone.nextOfType('error')).error, 'seat-taken');
+});
+
+test('take-seat before joining is a not-joined error', async (t) => {
+  const { url } = await start(t);
+  const phone = await connect(url);
+
+  phone.send({ type: 'take-seat', seat: 1 });
+
+  assert.equal((await phone.nextOfType('error')).error, 'not-joined');
+});
