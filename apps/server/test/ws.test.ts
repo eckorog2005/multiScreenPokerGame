@@ -129,10 +129,7 @@ test('resume reattaches a new socket to the same Player after a drop', async (t)
   again.send({ type: 'resume', code, token });
 
   const joined = await again.next();
-  assert.deepEqual(
-    [joined.type, (joined as { playerId: string }).playerId],
-    ['joined', playerId],
-  );
+  assert.deepEqual([joined.type, (joined as { playerId: string }).playerId], ['joined', playerId]);
   const view = await again.next();
   assert.equal((view as { view: { you: { playerId: string } } }).view.you.playerId, playerId);
 });
@@ -199,7 +196,8 @@ test('a screen never receives Hole Cards that are not its own', async (t) => {
   const holeCards = async (client: typeof ann) => {
     for (;;) {
       const message = await client.nextOfType('player-view');
-      if ((message as unknown as Seen).view.you.holeCards) return JSON.stringify((message as unknown as Seen).view.you.holeCards);
+      if ((message as unknown as Seen).view.you.holeCards)
+        return JSON.stringify((message as unknown as Seen).view.you.holeCards);
     }
   };
   const annCards = await holeCards(ann);

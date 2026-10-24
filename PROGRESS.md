@@ -56,6 +56,12 @@ The engine (rules, Game, views) and the WebSocket server (create, join, resume, 
   - `SeatView` gained `connected`; the engine's `tableView`/`playerView` take an optional `isConnected` predicate (default: everyone connected) that the server supplies.
   - Server tests drive real WebSocket clients (`test/ws-client.ts`) against `buildApp()`.
 
+- [x] 2026-10-23: CI and formatting (issue 15).
+  - Prettier (`.prettierrc.json`, single quotes, width 120) formats the whole repo. The reformat commit is listed in `.git-blame-ignore-revs`.
+  - `.github/workflows/ci.yml` runs on pushes and PRs to `main`: a "Format and lint" job on Node 24, plus "Build and test" on Node 22 and 24. A newer push to a PR cancels the older run.
+  - The shared `.github/actions/setup` action enables pnpm through corepack and caches the pnpm store by lockfile hash.
+  - `pnpm check` runs the same steps locally.
+
 ## Next up
 
 The v1 plan is now specified in `.scratch/holdem-v1/` (`spec.md`, plus one issue per file under `issues/`). Those issues replace the list below wherever the two differ.
@@ -72,7 +78,7 @@ The v1 plan is now specified in `.scratch/holdem-v1/` (`spec.md`, plus one issue
 - [ ] Serve the built client from Fastify (`apps/client/dist`) so production is one process on one origin.
 - [ ] Card art and styling that works on a TV/laptop for the table and a phone for players.
 - [ ] Playwright end-to-end test: one table and two phones in separate browser contexts.
-- [ ] Formatting; CI to run lint, tests and build.
+- [x] Formatting; CI to run lint, tests and build.
 - [ ] Rename the GitHub repo (e.g. `multiScreenPoker`).
 
 ## Open questions
@@ -90,6 +96,8 @@ pnpm dev     # server on :9090 and client on :5173, both with reload
 pnpm test
 pnpm build
 pnpm lint
+pnpm format  # Prettier, writes changes
+pnpm check   # what CI runs: format check, lint, build, test
 ```
 
 Then open http://localhost:5173 for the client (or http://localhost:9090 for the server directly).

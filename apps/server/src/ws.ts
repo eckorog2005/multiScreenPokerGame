@@ -58,7 +58,12 @@ export async function registerRealtime(app: FastifyInstance) {
         player.screen = screen;
         player.disconnectedAt = null;
         session = { game, playerId: player.id };
-        screen.send({ type: 'joined', code: game.code, playerId: player.id, token: player.token } satisfies ServerMessage);
+        screen.send({
+          type: 'joined',
+          code: game.code,
+          playerId: player.id,
+          token: player.token,
+        } satisfies ServerMessage);
       }
       broadcast(game);
     };
@@ -113,6 +118,9 @@ function broadcast(game: ServerGame) {
     table.send({ type: 'table-view', view: tableView(game.state, isConnected(game)) } satisfies ServerMessage);
   }
   for (const player of game.players.values()) {
-    player.screen?.send({ type: 'player-view', view: playerView(game.state, player.id, isConnected(game)) } satisfies ServerMessage);
+    player.screen?.send({
+      type: 'player-view',
+      view: playerView(game.state, player.id, isConnected(game)),
+    } satisfies ServerMessage);
   }
 }

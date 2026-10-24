@@ -157,7 +157,10 @@ export function applyAction(state: HandState, playerId: string, action: Action):
   if (action.type === 'bet' || action.type === 'raise') {
     const { amount } = action;
     if (!Number.isInteger(amount) || amount < legal.minRaiseTo! || amount > legal.maxRaiseTo!) {
-      return fail('invalid-amount', `${action.type} must be a whole number from ${legal.minRaiseTo} to ${legal.maxRaiseTo}`);
+      return fail(
+        'invalid-amount',
+        `${action.type} must be a whole number from ${legal.minRaiseTo} to ${legal.maxRaiseTo}`,
+      );
     }
   }
 
@@ -286,10 +289,7 @@ function settle(draft: Draft, fromSeat: number): void {
 
     const canAct = live.filter((p) => !p.allIn).length;
     const next = clockwise(live, fromSeat).find(
-      (p) =>
-        !p.allIn &&
-        (!p.acted || p.bet < draft.currentBet) &&
-        !(canAct <= 1 && p.bet >= draft.currentBet),
+      (p) => !p.allIn && (!p.acted || p.bet < draft.currentBet) && !(canAct <= 1 && p.bet >= draft.currentBet),
     );
     if (next) {
       draft.toAct = next.id;
@@ -339,18 +339,14 @@ function finish(draft: Draft, showdown: boolean): void {
   draft.holeCardsRevealed = showdown;
 
   const live = draft.players.filter((p) => !p.folded);
-  const values = new Map(
-    showdown ? live.map((p) => [p.id, evaluateHand(p.holeCards, draft.board)] as const) : [],
-  );
+  const values = new Map(showdown ? live.map((p) => [p.id, evaluateHand(p.holeCards, draft.board)] as const) : []);
 
   const pots: PotResult[] = [];
   for (const pot of buildPots(draft.players)) {
     const contenders = live.filter((p) => pot.eligible.includes(p.id));
     let winners = contenders;
     if (showdown) {
-      const best = contenders.reduce((a, b) =>
-        compareHands(values.get(b.id)!, values.get(a.id)!) > 0 ? b : a,
-      );
+      const best = contenders.reduce((a, b) => (compareHands(values.get(b.id)!, values.get(a.id)!) > 0 ? b : a));
       winners = contenders.filter((p) => compareHands(values.get(p.id)!, values.get(best.id)!) === 0);
     }
     const ordered = clockwise(winners, draft.button);
@@ -362,7 +358,9 @@ function finish(draft: Draft, showdown: boolean): void {
       winners: ordered.map((p, i) => {
         const amount = share + (i < oddChips ? 1 : 0);
         p.stack += amount;
-        return showdown ? { playerId: p.id, amount, description: values.get(p.id)!.description } : { playerId: p.id, amount };
+        return showdown
+          ? { playerId: p.id, amount, description: values.get(p.id)!.description }
+          : { playerId: p.id, amount };
       }),
     });
   }
@@ -381,10 +379,7 @@ function buildPots(players: readonly Player[]): { amount: number; eligible: stri
   );
   let previous = 0;
   const pots = levels.map((level) => {
-    const amount = players.reduce(
-      (sum, p) => sum + Math.min(p.committed, level) - Math.min(p.committed, previous),
-      0,
-    );
+    const amount = players.reduce((sum, p) => sum + Math.min(p.committed, level) - Math.min(p.committed, previous), 0);
     const eligible = players.filter((p) => !p.folded && p.committed >= level).map((p) => p.id);
     previous = level;
     return { amount, eligible };

@@ -377,7 +377,11 @@ describe('removal', () => {
     game = ok(removePlayer(game, 'a', 'b'));
     game = ok(join(game, { playerId: 'b', name: 'b', seat: 2 }));
     expect(game.players.find((p) => p.id === 'b')).toMatchObject({ chips: 1000, rebuys: 0 });
-    expect(standings(game).filter((r) => r.playerId === 'b').map((r) => [r.net, r.removed])).toEqual([
+    expect(
+      standings(game)
+        .filter((r) => r.playerId === 'b')
+        .map((r) => [r.net, r.removed]),
+    ).toEqual([
       [0, false],
       [-5, true],
     ]);

@@ -1,0 +1,33 @@
+name: Setup
+description: Install Node, enable pnpm through corepack, and install dependencies from a cached store
+
+inputs:
+  node-version:
+    description: Node.js version
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v7
+      with:
+        node-version: ${{ inputs.node-version }}
+        package-manager-cache: false
+
+    # setup-node's built-in pnpm cache needs pnpm on PATH first, so the store is cached by hand.
+    - name: Enable pnpm
+      shell: bash
+      run: |
+        corepack enable
+        echo "store=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+      id: pnpm
+
+    - uses: actions/cache@v6
+      with:
+        path: ${{ steps.pnpm.outputs.store }}
+        key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+        restore-keys: pnpm-store-${{ runner.os }}-
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile
