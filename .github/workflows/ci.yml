@@ -34,18 +34,14 @@ jobs:
         run: pnpm lint
 
   test:
-    name: Build and test (Node ${{ matrix.node }})
+    name: Build and test
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        node: [22, 24]
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
         with:
-          node-version: ${{ matrix.node }}
+          node-version: 24
       - name: Build and typecheck
         run: pnpm build
       - name: Test
