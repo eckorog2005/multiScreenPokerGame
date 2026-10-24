@@ -18,12 +18,14 @@
   "license": "MIT",
   "dependencies": {
     "@fastify/static": "^10.1.6",
+    "@fastify/websocket": "^11.3.4",
     "@poker/engine": "workspace:*",
     "@poker/protocol": "workspace:*",
     "fastify": "^5.12.5"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",
+    "@types/ws": "^8.18.2",
     "oxlint": "^1.81.0",
     "typescript": "~6.0.2"
   }

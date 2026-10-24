@@ -66,6 +66,7 @@ export type SeatView = {
   readonly isHost: boolean;
   readonly isButton: boolean;
   readonly sittingOut: boolean;
+  readonly connected: boolean;
   readonly inHand: boolean;
   readonly folded: boolean;
   readonly allIn: boolean;

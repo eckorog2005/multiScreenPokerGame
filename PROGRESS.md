@@ -13,7 +13,7 @@ pnpm workspace (Node >= 22.18):
 
 ## Status
 
-Early scaffold. The server serves a placeholder page and static assets. The client is a blank React app that proxies `/api` and `/ws` to the server in development. No game logic yet.
+The engine (rules, Game, views) and the WebSocket server (create, join, resume, deal) are done. The client is still a blank React app that proxies `/api` and `/ws` to the server in development.
 
 ## Done
 
@@ -48,6 +48,13 @@ Early scaffold. The server serves a placeholder page and static assets. The clie
 - [x] 2026-10-16: Protocol messages and per-screen views (issue 06).
   - `@poker/protocol` defines `ClientMessage` (intents, incl. `HostCommand`), `ServerMessage`, and the view types. It stays types-only; its own copies of `Card` etc. must stay structurally in sync with the engine.
   - `tableView(game)` and `playerView(game, playerId)` in `packages/engine/src/views.ts` project a `GameState` into those views. Hole Cards appear only for the Player themself, at Showdown (live hands only) or when an uncontested winner shows; the deck is never included. `playerView` throws `RangeError` for an unknown Player, so the server must check first.
+
+- [x] 2026-10-23: Real-time Game server (issue 07).
+  - `@fastify/websocket` on `/ws`, wired in `apps/server/src/ws.ts`; the in-memory `Registry` of Games is in `registry.ts`. Messages follow `ClientMessage`/`ServerMessage` in `@poker/protocol`.
+  - Handled so far: `create-game`, `open-table`, `join`, `resume`, and `host` → `deal-hand`. Other messages (`action`, `sit-out`, other Host commands, ...) are ignored until issues 10, 11 and 13.
+  - After every change each Table view gets `table-view` and each connected Player Device gets its own `player-view`. The server stores each Player's `disconnectedAt` and `hasConnectedScreen(game)` for issue 10's timers.
+  - `SeatView` gained `connected`; the engine's `tableView`/`playerView` take an optional `isConnected` predicate (default: everyone connected) that the server supplies.
+  - Server tests drive real WebSocket clients (`test/ws-client.ts`) against `buildApp()`.
 
 ## Next up
 

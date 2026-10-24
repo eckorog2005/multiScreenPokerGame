@@ -146,3 +146,16 @@ describe('playerView', () => {
 test('engine error codes are valid protocol error codes', () => {
   expectTypeOf<GameErrorCode>().toExtend<ErrorCode>();
 });
+
+describe('connection status', () => {
+  test('marks seats connected unless the predicate says otherwise', () => {
+    const game = table('a', 'b');
+
+    const seats = (isConnected?: (id: string) => boolean) =>
+      tableView(game, isConnected).seats.map((s) => s.connected);
+
+    expect(seats()).toEqual([true, true]);
+    expect(seats((id) => id === 'a')).toEqual([true, false]);
+    expect(playerView(game, 'a', (id) => id === 'b').seats.map((s) => s.connected)).toEqual([false, true]);
+  });
+});
