@@ -9,6 +9,8 @@ import {
   join,
   leave,
   playerView,
+  rebuy,
+  setSittingOut,
   setTurnTimer,
   tableView,
   takeSeat,
@@ -42,7 +44,9 @@ export async function registerRealtime(app: FastifyInstance, { registry, clock, 
         message.type === 'leave' ||
         message.type === 'take-seat' ||
         message.type === 'claim-host' ||
-        message.type === 'action'
+        message.type === 'action' ||
+        message.type === 'sit-out' ||
+        message.type === 'rebuy'
       ) {
         if (!session?.playerId || session.game.players.get(session.playerId)?.screen !== screen) {
           return fail('not-joined', 'Join or resume a Game first');
@@ -55,6 +59,11 @@ export async function registerRealtime(app: FastifyInstance, { registry, clock, 
           next = takeSeat(game.state, playerId, message.seat);
         } else if (message.type === 'action') {
           next = act(game.state, playerId, message.action);
+        } else if (message.type === 'sit-out') {
+          if (typeof message.sittingOut !== 'boolean') return fail('bad-message', 'sittingOut must be true or false');
+          next = setSittingOut(game.state, playerId, message.sittingOut);
+        } else if (message.type === 'rebuy') {
+          next = rebuy(game.state, playerId);
         } else if (message.type === 'claim-host') {
           if (!loop.hostClaimable(game)) {
             return fail('cannot-claim-host', 'The Host can be claimed after 60 seconds disconnected');

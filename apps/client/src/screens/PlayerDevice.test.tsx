@@ -1,10 +1,11 @@
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
-import type { GameSeatsResponse, PlayerView, SeatView, YouView } from '@poker/protocol';
+import type { GameSeatsResponse } from '@poker/protocol';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { FakeWebSocket } from '../connection/fake-websocket.ts';
 import { saveToken } from '../connection/token-store.ts';
+import { playerView, seat } from '../test-views.ts';
 import PlayerDevice from './PlayerDevice.tsx';
 
 function Location() {
@@ -31,51 +32,6 @@ const fetchSeats = vi.fn(async (url: string) => {
   const code = url.split('/').at(-1)!;
   const body = seatsByCode[code];
   return { ok: body !== undefined, status: body ? 200 : 404, json: async () => body ?? { error: 'unknown-game' } };
-});
-
-const seat = (overrides: Partial<SeatView>): SeatView => ({
-  seat: 1,
-  playerId: 'p1',
-  name: 'Ada',
-  chips: 1000,
-  bet: 0,
-  isHost: false,
-  isButton: false,
-  sittingOut: false,
-  connected: true,
-  inHand: false,
-  folded: false,
-  allIn: false,
-  revealedCards: null,
-  ...overrides,
-});
-
-const playerView = (you: Partial<YouView>, seats: SeatView[]): PlayerView => ({
-  role: 'player',
-  hostId: null,
-  startingStack: 1000,
-  smallBlind: 5,
-  bigBlind: 10,
-  turnTimerSeconds: null,
-  paused: false,
-  seats,
-  hand: null,
-  standings: [],
-  you: {
-    playerId: 'p2',
-    name: 'Bob',
-    seat: null,
-    chips: 1000,
-    rebuys: 0,
-    sittingOut: false,
-    isHost: false,
-    holeCards: null,
-    toCall: 0,
-    legal: null,
-    canFoldFor: false,
-    canClaimHost: false,
-    ...you,
-  },
 });
 
 beforeEach(() => {
