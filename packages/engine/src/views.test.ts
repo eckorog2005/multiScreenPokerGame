@@ -167,10 +167,47 @@ describe('connection status', () => {
   test('marks seats connected unless the predicate says otherwise', () => {
     const game = table('a', 'b');
 
-    const seats = (isConnected?: (id: string) => boolean) => tableView(game, isConnected).seats.map((s) => s.connected);
+    const seats = (isConnected?: (id: string) => boolean) =>
+      tableView(game, { isConnected }).seats.map((s) => s.connected);
 
     expect(seats()).toEqual([true, true]);
     expect(seats((id) => id === 'a')).toEqual([true, false]);
-    expect(playerView(game, 'a', (id) => id === 'b').seats.map((s) => s.connected)).toEqual([false, true]);
+    expect(playerView(game, 'a', { isConnected: (id) => id === 'b' }).seats.map((s) => s.connected)).toEqual([
+      false,
+      true,
+    ]);
+  });
+
+  test("offers the Host fold-for only on a disconnected Player's turn", () => {
+    const game = play(table('a', 'b', 'c'), 'a fold');
+    expect(game.hand!.toAct).toBe('b');
+    const bAway = { isConnected: (id: string) => id !== 'b' };
+
+    expect(playerView(game, 'a').you.canFoldFor).toBe(false);
+    expect(playerView(game, 'a', bAway).you.canFoldFor).toBe(true);
+    expect(playerView(game, 'c', bAway).you.canFoldFor).toBe(false);
+    expect(playerView(play(game, 'b fold'), 'a', bAway).you.canFoldFor).toBe(false);
+  });
+});
+
+describe('loop context', () => {
+  test('includes whether auto-dealing is paused', () => {
+    const game = table('a', 'b');
+    expect(tableView(game).paused).toBe(false);
+    expect(tableView(game, { paused: true }).paused).toBe(true);
+  });
+
+  test('includes the turn time left only while someone is to act', () => {
+    const game = table('a', 'b');
+    expect(tableView(game).hand!.turnTimeLeftMs).toBeNull();
+    expect(tableView(game, { turnTimeLeftMs: 12_000 }).hand!.turnTimeLeftMs).toBe(12_000);
+    expect(tableView(play(game, 'a fold'), { turnTimeLeftMs: 12_000 }).hand!.turnTimeLeftMs).toBeNull();
+  });
+
+  test('offers Claim Host to seated Players other than the Host once the Host is claimable', () => {
+    const game = table('a', 'b');
+    expect(playerView(game, 'b').you.canClaimHost).toBe(false);
+    expect(playerView(game, 'b', { hostClaimable: true }).you.canClaimHost).toBe(true);
+    expect(playerView(game, 'a', { hostClaimable: true }).you.canClaimHost).toBe(false);
   });
 });

@@ -48,6 +48,7 @@ const tableView = (seats: SeatView[], hostId: string | null = null): TableView =
   smallBlind: 5,
   bigBlind: 10,
   turnTimerSeconds: null,
+  paused: false,
   seats,
   hand: null,
   standings: [],

@@ -33,6 +33,8 @@ export type ErrorCode =
   | 'cannot-leave'
   | 'unknown-game'
   | 'not-joined'
+  | 'cannot-fold-for'
+  | 'cannot-claim-host'
   | 'bad-message';
 
 export type HostCommand =
@@ -95,6 +97,8 @@ export type HandView = {
   readonly pot: number;
   readonly currentBet: number;
   readonly toAct: string | null;
+  /** Milliseconds left on the turn timer when the view was sent; null when the timer is off. */
+  readonly turnTimeLeftMs: number | null;
   readonly result: ResultView | null;
 };
 
@@ -111,6 +115,8 @@ export type GameViewBase = {
   readonly smallBlind: number;
   readonly bigBlind: number;
   readonly turnTimerSeconds: number | null;
+  /** The Host paused auto-dealing between Hands. */
+  readonly paused: boolean;
   readonly seats: readonly SeatView[];
   readonly hand: HandView | null;
   readonly standings: readonly StandingsRowView[];
@@ -138,6 +144,10 @@ export type YouView = {
   readonly toCall: number;
   /** Present only on the Player's turn. */
   readonly legal: LegalActionsView | null;
+  /** The Host may fold for the Player to act, who is disconnected. */
+  readonly canFoldFor: boolean;
+  /** The Host has been disconnected for more than 60 seconds. */
+  readonly canClaimHost: boolean;
 };
 
 export type PlayerView = GameViewBase & { readonly role: 'player'; readonly you: YouView };

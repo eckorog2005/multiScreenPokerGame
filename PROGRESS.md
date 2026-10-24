@@ -13,7 +13,7 @@ pnpm workspace (Node >= 24):
 
 ## Status
 
-The engine (rules, Game, views) and the WebSocket server (create, join, resume, leave, deal) are done. The join flow works end to end: the Table creates a Game and shows its Game Code, QR code and Seats, and Players join from `/play`. Play itself (issues 10–13) isn't built yet. In development the client proxies `/api` and `/ws` to the server.
+The engine (rules, Game, views) and the WebSocket server (create, join, resume, leave, deal) are done. The join flow works end to end: the Table creates a Game and shows its Game Code, QR code and Seats, and Players join from `/play`. The server loop (auto-deal, turn timer, disconnects, Host claim, cleanup) is done; the play screens (issues 11–13) aren't built yet. In development the client proxies `/api` and `/ws` to the server.
 
 ## Done
 
@@ -76,6 +76,14 @@ The engine (rules, Game, views) and the WebSocket server (create, join, resume, 
   - With a stored token for `?code=`, `/play` sends `resume` instead. If the token is unknown, it falls back to the join form.
   - New `take-seat` message (engine `takeSeat`): a joined Player with no Seat (after `leave`) picks an empty one and keeps their Chips. Typing the Game Code on bare `/play` also resumes when a token is stored for it. The server now handles `leave` and `take-seat`. The hook keeps the token after leaving, since rejoining from the same phone needs it.
   - The Player Device shows a minimal seated screen with a Leave button until issue 11.
+
+- [x] 2026-10-24: Game loop: auto-deal, turn timer, disconnects, cleanup (issue 10).
+  - `apps/server/src/loop.ts` keeps four `Timer`s per Game (turn, deal, host claim, cleanup). After every change the server calls `loop.changed(game)`, which re-arms them for the new state and then broadcasts. Timers use an injectable `Clock` (`clock.ts`; `buildApp(opts, { clock, autoDealDelayMs })`), and tests drive a `FakeClock`.
+  - After the first Hand, each Hand deals itself 5 s after the pot is awarded unless the Host paused (`set-paused`) or fewer than two connected Players with Chips aren't Sitting Out. Every deal first sets still-disconnected Players to Sitting Out; reconnecting doesn't undo it.
+  - With the turn timer on, a timed-out Player checks if they can and otherwise folds. With it off, a disconnected Player's turn waits and the Host can `fold-for` them (refused with `cannot-fold-for` if they're connected).
+  - `claim-host` works once the Host has been disconnected for 60 s (`cannot-claim-host` before). A Game with no connected screens for 30 minutes is discarded.
+  - Views gained `paused`, `hand.turnTimeLeftMs` (time left when the view was sent), `you.canFoldFor` and `you.canClaimHost`. The engine's `tableView`/`playerView` now take a `ViewContext` instead of a bare `isConnected`.
+  - The server also handles `action` and `set-turn-timer` now.
 
 ## Next up
 
