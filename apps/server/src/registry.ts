@@ -36,10 +36,6 @@ export class Registry {
     return this.#games.get(code);
   }
 
-  all(): IterableIterator<ServerGame> {
-    return this.#games.values();
-  }
-
   #newCode(): string {
     for (;;) {
       let code = '';

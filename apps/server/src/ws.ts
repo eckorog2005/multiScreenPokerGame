@@ -11,68 +11,82 @@ export async function registerRealtime(app: FastifyInstance) {
   await app.register(fastifyWebsocket);
 
   app.get('/ws', { websocket: true }, (socket) => {
-    let session: { game: ServerGame; playerId: string } | null = null;
+    let session: Session | null = null;
     const screen: Screen = { send: (message) => socket.send(JSON.stringify(message)) };
+    const fail = (error: ErrorCode, message: string) => screen.send(errorMessage(error, message));
 
-    socket.on('message', (data) => {
-      const message = parseMessage(data);
-      if (!message) return screen.send(errorMessage('bad-message', 'Messages must be JSON with a type'));
+    const handle = (message: ClientMessage) => {
+      if (message.type === 'host') {
+        if (!session?.playerId || session.game.players.get(session.playerId)?.screen !== screen) {
+          return fail('not-joined', 'Join or resume a Game first');
+        }
+        const { game, playerId } = session;
+        if (message.command?.type !== 'deal-hand') return fail('bad-message', 'Unsupported Host command');
+        const next = dealHand(game.state, { by: playerId });
+        if (isGameError(next)) return fail(next.error, next.message);
+        game.state = next;
+        return broadcast(game);
+      }
+      if (session) return fail('bad-message', 'This socket is already attached to a Game');
+
       if (message.type === 'create-game') {
         const game = registry.create();
         game.tables.add(screen);
+        session = { game, playerId: null };
         screen.send({ type: 'game-created', code: game.code } satisfies ServerMessage);
-        broadcast(game);
-      } else if (message.type === 'open-table') {
-        const game = registry.get(message.code);
-        if (!game) return screen.send(errorMessage('unknown-game', 'No Game has that code'));
+        return broadcast(game);
+      }
+      if (message.type !== 'open-table' && message.type !== 'join' && message.type !== 'resume') return;
+
+      const game = registry.get(message.code);
+      if (!game) return fail('unknown-game', 'No Game has that code');
+      if (message.type === 'open-table') {
         game.tables.add(screen);
-        broadcast(game);
+        session = { game, playerId: null };
       } else if (message.type === 'join') {
-        const game = registry.get(message.code);
-        if (!game) return screen.send(errorMessage('unknown-game', 'No Game has that code'));
         const playerId = randomUUID();
         const next = join(game.state, { playerId, name: message.name, seat: message.seat });
-        if (isGameError(next)) return screen.send({ type: 'error', error: next.error, message: next.message });
+        if (isGameError(next)) return fail(next.error, next.message);
         const token = randomUUID();
         game.state = next;
         game.players.set(playerId, { id: playerId, token, screen, disconnectedAt: null });
         session = { game, playerId };
         screen.send({ type: 'joined', code: game.code, playerId, token } satisfies ServerMessage);
-        broadcast(game);
-      } else if (message.type === 'resume') {
-        const game = registry.get(message.code);
-        if (!game) return screen.send(errorMessage('unknown-game', 'No Game has that code'));
+      } else {
         const player = [...game.players.values()].find((p) => p.token === message.token);
-        if (!player) return screen.send(errorMessage('unknown-player', 'Unknown token'));
+        if (!player) return fail('unknown-player', 'Unknown token');
         player.screen = screen;
         player.disconnectedAt = null;
         session = { game, playerId: player.id };
         screen.send({ type: 'joined', code: game.code, playerId: player.id, token: player.token } satisfies ServerMessage);
-        broadcast(game);
-      } else if (message.type === 'host' && session) {
-        const { game, playerId } = session;
-        if (message.command.type === 'deal-hand') {
-          const next = dealHand(game.state, { by: playerId });
-          if (isGameError(next)) return screen.send({ type: 'error', error: next.error, message: next.message });
-          game.state = next;
-          broadcast(game);
-        }
+      }
+      broadcast(game);
+    };
+
+    socket.on('message', (data) => {
+      const message = parseMessage(data);
+      if (!message) return fail('bad-message', 'Messages must be JSON with a type');
+      try {
+        handle(message);
+      } catch {
+        fail('bad-message', 'Malformed message');
       }
     });
 
     socket.on('close', () => {
-      for (const game of registry.all()) {
-        game.tables.delete(screen);
-        for (const player of game.players.values()) {
-          if (player.screen !== screen) continue;
-          player.screen = null;
-          player.disconnectedAt = Date.now();
-          broadcast(game);
-        }
-      }
+      if (!session) return;
+      const { game, playerId } = session;
+      game.tables.delete(screen);
+      const player = playerId ? game.players.get(playerId) : undefined;
+      if (player?.screen !== screen) return;
+      player.screen = null;
+      player.disconnectedAt = Date.now();
+      broadcast(game);
     });
   });
 }
+
+type Session = { game: ServerGame; playerId: string | null };
 
 function parseMessage(data: unknown): ClientMessage | null {
   try {

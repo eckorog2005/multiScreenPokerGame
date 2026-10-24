@@ -242,3 +242,62 @@ test('a malformed message is a bad-message error and the socket stays usable', a
   table.send({ type: 'create-game' });
   assert.equal((await table.next()).type, 'game-created');
 });
+
+test('a host message with no command is a bad-message error, not a crash', async (t) => {
+  const { url } = await start(t);
+  const { phone } = await seatedPlayer(url);
+
+  phone.sendRaw('{"type":"host"}');
+
+  assert.equal(((await phone.next()) as { error: string }).error, 'bad-message');
+  phone.send({ type: 'host', command: { type: 'deal-hand' } });
+  assert.equal(((await phone.next()) as { error: string }).error, 'not-enough-players');
+});
+
+test('a host message before joining is a not-joined error', async (t) => {
+  const { url } = await start(t);
+  const phone = await connect(url);
+
+  phone.send({ type: 'host', command: { type: 'deal-hand' } });
+
+  assert.equal(((await phone.next()) as { error: string }).error, 'not-joined');
+});
+
+test('a Host command that is not supported yet is a bad-message error', async (t) => {
+  const { url } = await start(t);
+  const { phone } = await seatedPlayer(url);
+
+  phone.send({ type: 'host', command: { type: 'end-game' } });
+
+  assert.equal(((await phone.next()) as { error: string }).error, 'bad-message');
+});
+
+test('a socket that is already attached cannot attach again', async (t) => {
+  const { url } = await start(t);
+  const { table, phone, code, token } = await seatedPlayer(url);
+
+  for (const message of [
+    { type: 'create-game' },
+    { type: 'open-table', code },
+    { type: 'join', code, name: 'Bob', seat: 2 },
+    { type: 'resume', code, token },
+  ] as const) {
+    for (const client of [table, phone]) {
+      client.send(message);
+      const reply = await client.nextOfType('error');
+      assert.equal(reply.error, 'bad-message');
+    }
+  }
+});
+
+test('a socket replaced by resume can no longer act as the Player', async (t) => {
+  const { url } = await start(t);
+  const { phone, code, token } = await seatedPlayer(url);
+  const reloaded = await connect(url);
+  reloaded.send({ type: 'resume', code, token });
+  await reloaded.nextOfType('player-view');
+
+  phone.send({ type: 'host', command: { type: 'deal-hand' } });
+
+  assert.equal((await phone.nextOfType('error')).error, 'not-joined');
+});
