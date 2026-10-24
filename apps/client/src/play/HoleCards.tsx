@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Card } from '@poker/protocol';
-import { cardText, isRed } from '../cards.ts';
+import CardFace from '../CardFace.tsx';
 
 function HoleCards({ cards }: { cards: readonly [Card, Card] }) {
   const [faceUp, setFaceUp] = useState(false);
@@ -18,13 +18,7 @@ function HoleCards({ cards }: { cards: readonly [Card, Card] }) {
       onContextMenu={(event) => event.preventDefault()}
     >
       {cards.map((card, i) =>
-        faceUp ? (
-          <span key={i} className={isRed(card) ? 'card red' : 'card'}>
-            {cardText(card)}
-          </span>
-        ) : (
-          <span key={i} className="card back" aria-hidden="true" />
-        ),
+        faceUp ? <CardFace key={i} card={card} /> : <span key={i} className="card back" aria-hidden="true" />,
       )}
     </div>
   );

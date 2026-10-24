@@ -3,8 +3,14 @@ import { useSearchParams } from 'react-router';
 import { MAX_SEATS } from '@poker/engine';
 import type { ErrorCode, GameSeatsResponse, PlayerView } from '@poker/protocol';
 import { loadToken } from '../connection/token-store.ts';
-import { useConnection, type ConnectionStatus, type ServerError } from '../connection/use-connection.ts';
+import {
+  useConnection,
+  type Connection,
+  type ConnectionStatus,
+  type ServerError,
+} from '../connection/use-connection.ts';
 import Seated from '../play/Seated.tsx';
+import { useWakeLock } from '../play/use-wake-lock.ts';
 
 type Seats = GameSeatsResponse['seats'];
 
@@ -141,9 +147,10 @@ function Joined({
   view: PlayerView;
   status: ConnectionStatus;
   notice: string | null;
-  send: ReturnType<typeof useConnection>['send'];
+  send: Connection['send'];
 }) {
   const { you } = view;
+  useWakeLock();
   if (you.seat !== null) return <Seated view={view} status={status} notice={notice} send={send} />;
   return (
     <main>

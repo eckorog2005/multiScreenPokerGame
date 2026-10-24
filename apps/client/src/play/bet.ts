@@ -1,8 +1,6 @@
-import type { LegalActionsView } from '@poker/protocol';
+import type { HandView, LegalActionsView } from '@poker/protocol';
 
 export type BetPreset = { readonly label: string; readonly amount: number };
-
-type Pot = { readonly pot: number; readonly currentBet: number };
 
 export function clampBet(amount: number, legal: LegalActionsView): number {
   const min = legal.minRaiseTo ?? 0;
@@ -16,7 +14,10 @@ export function stepBet(amount: number, direction: 1 | -1, legal: LegalActionsVi
 }
 
 /** "To" amounts; a pot-sized raise first calls, then raises by the pot after the call. */
-export function betPresets(legal: LegalActionsView, { pot, currentBet }: Pot): BetPreset[] {
+export function betPresets(
+  legal: LegalActionsView,
+  { pot, currentBet }: Pick<HandView, 'pot' | 'currentBet'>,
+): BetPreset[] {
   const potAfterCall = pot + legal.toCall;
   return [
     { label: 'Min', amount: clampBet(legal.minRaiseTo ?? 0, legal) },

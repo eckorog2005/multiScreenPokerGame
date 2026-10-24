@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
-import type { ClientMessage, HandView, LegalActionsView, PlayerAction, PlayerView } from '@poker/protocol';
-import { cardText, isRed } from '../cards.ts';
-import type { ConnectionStatus } from '../connection/use-connection.ts';
+import type { HandView, LegalActionsView, PlayerAction, PlayerView } from '@poker/protocol';
+import CardFace from '../CardFace.tsx';
+import type { Connection, ConnectionStatus } from '../connection/use-connection.ts';
 import { betPresets, clampBet, stepBet } from './bet.ts';
 import HoleCards from './HoleCards.tsx';
-import { useWakeLock } from './use-wake-lock.ts';
 
-type Send = (message: ClientMessage) => boolean;
+type Send = Connection['send'];
 
 type Props = { view: PlayerView; status: ConnectionStatus; send: Send; notice?: string | null };
 
@@ -15,7 +14,6 @@ function Seated({ view, status, send, notice = null }: Props) {
   const act = (action: PlayerAction) => send({ type: 'action', action });
   const handActive = hand !== null && hand.street !== 'complete';
   const myTurn = you.legal !== null;
-  useWakeLock();
   useEffect(() => {
     if (myTurn && 'vibrate' in navigator) navigator.vibrate(200);
   }, [myTurn]);
@@ -34,6 +32,7 @@ function Seated({ view, status, send, notice = null }: Props) {
       </header>
       {hand && <BoardSummary hand={hand} />}
       {you.holeCards && <HoleCards cards={you.holeCards} />}
+      {handActive && !myTurn && you.toCall > 0 && <p>To call: {you.toCall}</p>}
       {notice && <p role="alert">{notice}</p>}
       {you.legal && hand ? (
         <section className="your-turn" aria-labelledby="your-turn">
@@ -91,26 +90,21 @@ function BoardSummary({ hand }: { hand: HandView }) {
       <p>Pot {hand.pot}</p>
       <p>
         {hand.board.map((card, i) => (
-          <span key={i} className={isRed(card) ? 'card small red' : 'card small'}>
-            {cardText(card)}
-          </span>
+          <CardFace key={i} card={card} small />
         ))}
       </p>
     </section>
   );
 }
 
-function Actions({
-  legal,
-  hand,
-  bigBlind,
-  act,
-}: {
+type TurnProps = {
   legal: LegalActionsView;
   hand: HandView;
   bigBlind: number;
   act: (action: PlayerAction) => void;
-}) {
+};
+
+function Actions({ legal, hand, bigBlind, act }: TurnProps) {
   const can = (type: LegalActionsView['actions'][number]) => legal.actions.includes(type);
   const betType = can('bet') ? 'bet' : can('raise') ? 'raise' : null;
   return (
@@ -147,19 +141,7 @@ function Actions({
   );
 }
 
-function BetControls({
-  type,
-  legal,
-  hand,
-  bigBlind,
-  act,
-}: {
-  type: 'bet' | 'raise';
-  legal: LegalActionsView;
-  hand: HandView;
-  bigBlind: number;
-  act: (action: PlayerAction) => void;
-}) {
+function BetControls({ type, legal, hand, bigBlind, act }: TurnProps & { type: 'bet' | 'raise' }) {
   const [amount, setAmount] = useState(() => clampBet(legal.minRaiseTo ?? 0, legal));
   return (
     <div className="bet-controls">

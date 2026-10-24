@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ClientMessage, PlayerView } from '@poker/protocol';
 import { afterEach, expect, test, vi } from 'vitest';
@@ -10,6 +10,10 @@ const holeCards = [
   { rank: 'A', suit: 's' },
   { rank: 'K', suit: 's' },
 ] as const;
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 const bob = (overrides = {}) => seat({ seat: 5, playerId: 'p2', name: 'Bob', inHand: true, ...overrides });
 
@@ -75,6 +79,16 @@ test('a Player too short to raise can fold, call or go all-in', () => {
     expect.arrayContaining(['Fold', 'Call 10', 'All-in']),
   );
   expect(screen.queryByRole('slider')).not.toBeInTheDocument();
+});
+
+test('the amount to call shows while waiting for their turn', () => {
+  renderSeated(
+    playerView({ seat: 5, holeCards, toCall: 40 }, [seat({ seat: 3, inHand: true, bet: 50 }), bob({ bet: 10 })], {
+      hand: hand({ currentBet: 50, toAct: 'p1' }),
+    }),
+  );
+
+  expect(screen.getByText('To call: 40')).toBeInTheDocument();
 });
 
 test('when it is not their turn, a Player has no betting actions', () => {
@@ -177,10 +191,6 @@ test('a dropped connection shows a reconnecting banner', () => {
   expect(screen.getByRole('status')).toHaveTextContent('Reconnecting');
 });
 
-afterEach(() => {
-  vi.unstubAllGlobals();
-});
-
 test("the phone vibrates once when the Player's turn begins", () => {
   const vibrate = vi.fn(() => true);
   vi.stubGlobal('navigator', { ...navigator, vibrate });
@@ -192,23 +202,4 @@ test("the phone vibrates once when the Player's turn begins", () => {
   rerender({ ...facingBet, hand: hand({ toAct: 'p2', turnTimeLeftMs: 5000 }) });
 
   expect(vibrate).toHaveBeenCalledTimes(1);
-});
-
-test('the screen is kept awake, and the lock is taken again when the page is visible again', async () => {
-  const release = vi.fn(async () => {});
-  const request = vi.fn(async () => ({ release }));
-  vi.stubGlobal('navigator', { ...navigator, wakeLock: { request } });
-
-  const { unmount } = render(<Seated view={playerView({ seat: 5 }, [bob()])} status="open" send={() => true} />);
-  await act(async () => {});
-  expect(request).toHaveBeenCalledWith('screen');
-
-  await act(async () => {
-    document.dispatchEvent(new Event('visibilitychange'));
-  });
-  expect(request).toHaveBeenCalledTimes(2);
-
-  unmount();
-  await act(async () => {});
-  expect(release).toHaveBeenCalled();
 });

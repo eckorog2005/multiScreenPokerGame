@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import type { GameSeatsResponse } from '@poker/protocol';
@@ -169,4 +169,26 @@ test('resumes with the stored token when the Game Code is typed instead of linke
 
   expect(socket.sent).toEqual([{ type: 'resume', code: 'ABCD', token: 'secret' }]);
   expect(fetchSeats).not.toHaveBeenCalled();
+});
+
+test('the screen is kept awake in a Game, and the lock is taken again when the page is visible again', async () => {
+  const release = vi.fn(async () => {});
+  const request = vi.fn(async () => ({ release }));
+  vi.stubGlobal('navigator', { ...navigator, wakeLock: { request } });
+  saveToken('ABCD', 'secret');
+  const socket = renderPlay('/play?code=ABCD');
+  expect(request).not.toHaveBeenCalled();
+
+  act(() => socket.serverSend({ type: 'joined', code: 'ABCD', playerId: 'p2', token: 'secret' }));
+  await act(async () => socket.serverSend({ type: 'player-view', view: playerView({ seat: null }, []) }));
+  expect(request).toHaveBeenCalledWith('screen');
+
+  await act(async () => {
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  expect(request).toHaveBeenCalledTimes(2);
+
+  cleanup();
+  await act(async () => {});
+  expect(release).toHaveBeenCalled();
 });

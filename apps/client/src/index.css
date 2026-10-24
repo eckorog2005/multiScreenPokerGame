@@ -76,7 +76,18 @@ label input {
 }
 
 .seated.my-turn {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  overflow-y: auto;
   background: color-mix(in srgb, gold 25%, Canvas);
+}
+
+.your-turn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .your-turn h2 {
