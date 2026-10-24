@@ -15,7 +15,8 @@
     "@poker/engine": "workspace:*",
     "@poker/protocol": "workspace:*",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "react-router": "^8.5.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^7.0.1",
