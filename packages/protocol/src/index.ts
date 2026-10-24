@@ -50,6 +50,8 @@ export type ClientMessage =
   | { readonly type: 'open-table'; readonly code: string }
   | { readonly type: 'join'; readonly code: string; readonly name: string; readonly seat: number }
   | { readonly type: 'resume'; readonly code: string; readonly token: string }
+  /** A joined Player with no Seat (after leaving) picks an empty one. */
+  | { readonly type: 'take-seat'; readonly seat: number }
   | { readonly type: 'action'; readonly action: PlayerAction }
   | { readonly type: 'sit-out'; readonly sittingOut: boolean }
   | { readonly type: 'leave' }
@@ -139,6 +141,12 @@ export type YouView = {
 };
 
 export type PlayerView = GameViewBase & { readonly role: 'player'; readonly you: YouView };
+
+/** `GET /api/games/:code`, so a Player Device can pick a Seat before joining. 404 means an unknown Game Code. */
+export type GameSeatsResponse = {
+  readonly code: string;
+  readonly seats: readonly { readonly seat: number; readonly name: string }[];
+};
 
 export type ServerMessage =
   | { readonly type: 'game-created'; readonly code: string }

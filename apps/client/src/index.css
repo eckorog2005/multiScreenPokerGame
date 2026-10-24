@@ -6,3 +6,58 @@
 body {
   margin: 0;
 }
+
+main {
+  padding: 16px;
+}
+
+.game-code {
+  font-size: clamp(4rem, 15vw, 10rem);
+  letter-spacing: 0.15em;
+  margin: 0;
+}
+
+.seats,
+.seat-picker {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: 8px;
+}
+
+.seats li {
+  padding: 12px;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+}
+
+.seat-picker button {
+  width: 100%;
+  padding: 16px;
+  font-size: 1rem;
+}
+
+.badge {
+  margin-left: 0.5em;
+  padding: 0 0.4em;
+  border-radius: 4px;
+  background: gold;
+  color: black;
+  font-size: 0.8em;
+}
+
+.empty {
+  opacity: 0.6;
+}
+
+label {
+  display: block;
+  margin-block: 12px;
+}
+
+label input {
+  display: block;
+  font-size: 1.25rem;
+  padding: 8px;
+}

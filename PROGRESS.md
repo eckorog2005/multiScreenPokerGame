@@ -13,7 +13,7 @@ pnpm workspace (Node >= 22.18):
 
 ## Status
 
-The engine (rules, Game, views) and the WebSocket server (create, join, resume, deal) are done. The client has its routes and a reconnecting connection hook, but no real screens yet; it proxies `/api` and `/ws` to the server in development.
+The engine (rules, Game, views) and the WebSocket server (create, join, resume, leave, deal) are done. The join flow works end to end: the Table creates a Game and shows its Game Code, QR code and Seats, and Players join from `/play`. Play itself (issues 10–13) isn't built yet. In development the client proxies `/api` and `/ws` to the server.
 
 ## Done
 
@@ -70,6 +70,13 @@ The engine (rules, Game, views) and the WebSocket server (create, join, resume, 
   - Player tokens are saved per Game Code by `token-store.ts` (`loadToken`, `saveToken`, `clearToken`); every `localStorage` access is wrapped so a blocked storage just means no resume.
   - Hook tests use `FakeWebSocket` (`src/connection/fake-websocket.ts`) via `vi.stubGlobal` plus fake timers.
 
+- [x] 2026-10-23: Join flow (issue 09).
+  - `/table` sends `create-game` (or `open-table` with `?code=`) and puts the Game Code in the URL, so a reload reattaches. It shows the Game Code, a QR code (`qrcode.react`) for `<origin>/play?code=XXXX`, and the nine Seats with the Host marked.
+  - `/play` asks for the Game Code (pre-filled from `?code=`) and a name, then loads the Seats from `GET /api/games/:code` (`GameSeatsResponse`; 404 for an unknown code). A socket can attach only once, so the phone can't watch the Table view before joining. Name-taken, Seat-taken and unknown-code errors show inline; a seat-taken error reloads the Seats.
+  - With a stored token for `?code=`, `/play` sends `resume` instead. If the token is unknown, it falls back to the join form.
+  - New `take-seat` message (engine `takeSeat`): a joined Player with no Seat (after `leave`) picks an empty one and keeps their Chips. Typing the Game Code on bare `/play` also resumes when a token is stored for it. The server now handles `leave` and `take-seat`. The hook keeps the token after leaving, since rejoining from the same phone needs it.
+  - The Player Device shows a minimal seated screen with a Leave button until issue 11.
+
 ## Next up
 
 The v1 plan is now specified in `.scratch/holdem-v1/` (`spec.md`, plus one issue per file under `issues/`). Those issues replace the list below wherever the two differ.
@@ -79,7 +86,7 @@ The v1 plan is now specified in `.scratch/holdem-v1/` (`spec.md`, plus one issue
 - [x] Card engine: deck, shuffle (crypto RNG). Dealing comes with the Hand state machine (issue 04).
 - [ ] Texas Hold'em rules: blinds, betting rounds, side pots, hand evaluation, showdown.
 - [x] Client routes: landing (host a table / join a game), `/table`, `/play`.
-- [ ] Join flow: enter a room code on the phone and/or scan a QR code shown on the table screen.
+- [x] Join flow: enter a room code on the phone and/or scan a QR code shown on the table screen.
 - [ ] Table view: community cards, pot, seats, chip stacks, whose turn it is.
 - [ ] Player view (mobile first): hole cards, chip stack, fold / check / call / raise with a bet slider.
 - [ ] Reconnects: a player who drops can rejoin their seat.
@@ -109,5 +116,7 @@ pnpm check   # what CI runs: format check, lint, build, test
 ```
 
 Then open http://localhost:5173 for the client (or http://localhost:9090 for the server directly).
+
+To join from a phone in development, put the phone on the same Wi-Fi as your machine. The Vite dev server listens on all interfaces, and when the Table runs on `localhost` the QR link uses your machine's first non-internal IPv4 address instead (e.g. `http://192.168.1.20:5173/play?code=ABCD`). If it picks the wrong interface, set it yourself: `LAN_HOST=192.168.1.20 pnpm dev`. Your firewall must allow incoming connections on port 5173.
 
 Run a single app with `pnpm --filter server <script>` or `pnpm --filter client <script>`.

@@ -91,25 +91,34 @@ export function createGame(): GameState {
 
 export function join(game: GameState, input: JoinInput): GameState | GameError {
   const { playerId, seat } = input;
+  if (findPlayer(game, playerId)) return takeSeat(game, playerId, seat);
+  const denied = seatDenied(game, seat);
+  if (denied) return denied;
+  const name = input.name.trim();
+  if (!name) return fail('invalid-name', 'A display name is required');
+  if (game.players.some((p) => p.name.toLowerCase() === name.toLowerCase())) {
+    return fail('name-taken', `${name} is already taken`);
+  }
+  const player: GamePlayer = { id: playerId, name, seat, chips: game.startingStack, sittingOut: false, rebuys: 0 };
+  return { ...game, players: [...game.players, player], hostId: game.hostId ?? playerId };
+}
+
+export function takeSeat(game: GameState, playerId: string, seat: number): GameState | GameError {
+  const player = findPlayer(game, playerId);
+  if (!player) return unknownPlayer(playerId);
+  if (player.seat !== null) return fail('already-seated', 'Seats cannot be changed');
+  const denied = seatDenied(game, seat);
+  if (denied) return denied;
+  const players = game.players.map((p) => (p === player ? { ...p, seat } : p));
+  return { ...game, players, hostId: game.hostId ?? playerId };
+}
+
+function seatDenied(game: GameState, seat: number): GameError | null {
   if (!Number.isInteger(seat) || seat < 1 || seat > MAX_SEATS) {
     return fail('invalid-seat', `Seat must be from 1 to ${MAX_SEATS}`);
   }
-  const existing = findPlayer(game, playerId);
-  if (existing?.seat != null) return fail('already-seated', 'Seats cannot be changed');
   if (game.players.some((p) => p.seat === seat)) return fail('seat-taken', `Seat ${seat} is taken`);
-
-  let players: GamePlayer[];
-  if (existing) {
-    players = game.players.map((p) => (p === existing ? { ...p, seat } : p));
-  } else {
-    const name = input.name.trim();
-    if (!name) return fail('invalid-name', 'A display name is required');
-    if (game.players.some((p) => p.name.toLowerCase() === name.toLowerCase())) {
-      return fail('name-taken', `${name} is already taken`);
-    }
-    players = [...game.players, { id: playerId, name, seat, chips: game.startingStack, sittingOut: false, rebuys: 0 }];
-  }
-  return { ...game, players, hostId: game.hostId ?? playerId };
+  return null;
 }
 
 export function leave(game: GameState, playerId: string): GameState | GameError {

@@ -1,13 +1,11 @@
 import type { FastifyInstance } from 'fastify';
 import fastifyWebsocket from '@fastify/websocket';
 import { randomUUID } from 'node:crypto';
-import { dealHand, isGameError, join, playerView, tableView } from '@poker/engine';
+import { dealHand, isGameError, join, leave, playerView, tableView, takeSeat } from '@poker/engine';
 import type { ClientMessage, ErrorCode, ServerMessage } from '@poker/protocol';
-import { Registry, type Screen, type ServerGame } from './registry.ts';
+import type { Registry, Screen, ServerGame } from './registry.ts';
 
-export async function registerRealtime(app: FastifyInstance) {
-  const registry = new Registry();
-
+export async function registerRealtime(app: FastifyInstance, { registry }: { registry: Registry }) {
   await app.register(fastifyWebsocket);
 
   app.get('/ws', { websocket: true }, (socket) => {
@@ -16,13 +14,20 @@ export async function registerRealtime(app: FastifyInstance) {
     const fail = (error: ErrorCode, message: string) => screen.send(errorMessage(error, message));
 
     const handle = (message: ClientMessage) => {
-      if (message.type === 'host') {
+      if (message.type === 'host' || message.type === 'leave' || message.type === 'take-seat') {
         if (!session?.playerId || session.game.players.get(session.playerId)?.screen !== screen) {
           return fail('not-joined', 'Join or resume a Game first');
         }
         const { game, playerId } = session;
-        if (message.command?.type !== 'deal-hand') return fail('bad-message', 'Unsupported Host command');
-        const next = dealHand(game.state, { by: playerId });
+        let next;
+        if (message.type === 'leave') {
+          next = leave(game.state, playerId);
+        } else if (message.type === 'take-seat') {
+          next = takeSeat(game.state, playerId, message.seat);
+        } else {
+          if (message.command?.type !== 'deal-hand') return fail('bad-message', 'Unsupported Host command');
+          next = dealHand(game.state, { by: playerId });
+        }
         if (isGameError(next)) return fail(next.error, next.message);
         game.state = next;
         return broadcast(game);
