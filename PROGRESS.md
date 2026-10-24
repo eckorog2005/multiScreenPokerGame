@@ -74,7 +74,7 @@ The engine (rules, Game, views) and the WebSocket server (create, join, resume, 
   - `/table` sends `create-game` (or `open-table` with `?code=`) and puts the Game Code in the URL, so a reload reattaches. It shows the Game Code, a QR code (`qrcode.react`) for `<origin>/play?code=XXXX`, and the nine Seats with the Host marked.
   - `/play` asks for the Game Code (pre-filled from `?code=`) and a name, then loads the Seats from `GET /api/games/:code` (`GameSeatsResponse`; 404 for an unknown code). A socket can attach only once, so the phone can't watch the Table view before joining. Name-taken, Seat-taken and unknown-code errors show inline; a seat-taken error reloads the Seats.
   - With a stored token for `?code=`, `/play` sends `resume` instead. If the token is unknown, it falls back to the join form.
-  - New `take-seat` message: a joined Player with no Seat (after `leave`) picks an empty one and keeps their Chips. The server now handles `leave` and `take-seat`. The hook keeps the token after leaving, since rejoining from the same phone needs it.
+  - New `take-seat` message (engine `takeSeat`): a joined Player with no Seat (after `leave`) picks an empty one and keeps their Chips. Typing the Game Code on bare `/play` also resumes when a token is stored for it. The server now handles `leave` and `take-seat`. The hook keeps the token after leaving, since rejoining from the same phone needs it.
   - The Player Device shows a minimal seated screen with a Leave button until issue 11.
 
 ## Next up

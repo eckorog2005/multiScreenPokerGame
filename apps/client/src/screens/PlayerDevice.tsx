@@ -64,7 +64,13 @@ function PlayerDevice() {
   }, [step, code]);
 
   if (view?.role === 'player') return <Joined view={view} notice={error ? notice : null} send={send} />;
-  if (rejoining) return <Message text="Rejoining your Game…" />;
+  if (rejoining) {
+    return (
+      <main>
+        <p>Rejoining your Game…</p>
+      </main>
+    );
+  }
 
   if (step.kind === 'seats') {
     return (
@@ -92,6 +98,8 @@ function PlayerDevice() {
   const submit = (event: FormEvent) => {
     event.preventDefault();
     setNotice(null);
+    const token = loadToken(code);
+    if (token && send({ type: 'resume', code, token })) return setRejoining(true);
     if (!name.trim()) return setNotice('Enter a display name.');
     setSeats(null);
     setStep({ kind: 'seats' });
@@ -176,14 +184,6 @@ function SeatPicker({ seats, onPick }: { seats: Seats; onPick: (seat: number) =>
         );
       })}
     </ul>
-  );
-}
-
-function Message({ text }: { text: string }) {
-  return (
-    <main>
-      <p>{text}</p>
-    </main>
   );
 }
 

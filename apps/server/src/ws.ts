@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import fastifyWebsocket from '@fastify/websocket';
 import { randomUUID } from 'node:crypto';
-import { dealHand, isGameError, join, leave, playerView, tableView } from '@poker/engine';
+import { dealHand, isGameError, join, leave, playerView, tableView, takeSeat } from '@poker/engine';
 import type { ClientMessage, ErrorCode, ServerMessage } from '@poker/protocol';
 import type { Registry, Screen, ServerGame } from './registry.ts';
 
@@ -23,7 +23,7 @@ export async function registerRealtime(app: FastifyInstance, { registry }: { reg
         if (message.type === 'leave') {
           next = leave(game.state, playerId);
         } else if (message.type === 'take-seat') {
-          next = join(game.state, { playerId, name: '', seat: message.seat });
+          next = takeSeat(game.state, playerId, message.seat);
         } else {
           if (message.command?.type !== 'deal-hand') return fail('bad-message', 'Unsupported Host command');
           next = dealHand(game.state, { by: playerId });

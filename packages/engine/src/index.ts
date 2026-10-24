@@ -38,6 +38,7 @@ export {
   setStartingStack,
   setTurnTimer,
   standings,
+  takeSeat,
 } from './game.ts';
 export type { DealOptions, GameError, GameErrorCode, GamePlayer, GameState, JoinInput, StandingsRow } from './game.ts';
 export { playerView, tableView } from './views.ts';

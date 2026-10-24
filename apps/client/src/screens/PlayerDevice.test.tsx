@@ -200,3 +200,14 @@ test('a Player who left picks an empty Seat and keeps their Chips', async () => 
   await user.click(screen.getByRole('button', { name: /Seat 6/ }));
   expect(socket.sent.at(-1)).toEqual({ type: 'take-seat', seat: 6 });
 });
+
+test('resumes with the stored token when the Game Code is typed instead of linked', async () => {
+  const user = userEvent.setup();
+  saveToken('ABCD', 'secret');
+  const socket = renderPlay('/play');
+
+  await continueAs(user, 'ABCD', 'Bob');
+
+  expect(socket.sent).toEqual([{ type: 'resume', code: 'ABCD', token: 'secret' }]);
+  expect(fetchSeats).not.toHaveBeenCalled();
+});
