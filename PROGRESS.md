@@ -13,7 +13,7 @@ pnpm workspace (Node >= 22.18):
 
 ## Status
 
-The engine (rules, Game, views) and the WebSocket server (create, join, resume, deal) are done. The client is still a blank React app that proxies `/api` and `/ws` to the server in development.
+The engine (rules, Game, views) and the WebSocket server (create, join, resume, deal) are done. The client has its routes and a reconnecting connection hook, but no real screens yet; it proxies `/api` and `/ws` to the server in development.
 
 ## Done
 
@@ -62,6 +62,14 @@ The engine (rules, Game, views) and the WebSocket server (create, join, resume, 
   - The shared `.github/actions/setup` action enables pnpm through corepack and caches the pnpm store by lockfile hash.
   - `pnpm check` runs the same steps locally.
 
+- [x] 2026-10-23: Client connection hook and routes (issue 08).
+  - `react-router` routes in `apps/client/src/App.tsx`: `/` (landing with "Host a Table" and "Join a Game"), `/table` and `/play`. The two screens are placeholders until issue 09.
+  - `useConnection()` in `src/connection/use-connection.ts` opens `/ws` on the page origin and exposes `status` (`connecting`, `open`, `reconnecting`), `code`, `playerId`, the latest `view` and the last server `error` (cleared by the next `send`).
+  - `send` returns `false` and drops the message unless the socket is open, so screens send their first intent once `status` is `open`.
+  - On a drop it retries after 0.5 s, doubling up to 10 s, and resets after a successful connect. On reconnect it re-sends `resume` (after `joined`) or `open-table` (after `game-created` or an `open-table` send), so screens don't handle resync themselves: a screen sends its first `open-table`/`resume` once, not on every `open`, or the server rejects the second one as "already attached". If that re-sent intent gets `unknown-game` or `unknown-player` (e.g. the server restarted), the hook forgets the Game, clears its token and resets `code`, `playerId` and `view`. It doesn't yet forget anything on `leave` (issue 09).
+  - Player tokens are saved per Game Code by `token-store.ts` (`loadToken`, `saveToken`, `clearToken`); every `localStorage` access is wrapped so a blocked storage just means no resume.
+  - Hook tests use `FakeWebSocket` (`src/connection/fake-websocket.ts`) via `vi.stubGlobal` plus fake timers.
+
 ## Next up
 
 The v1 plan is now specified in `.scratch/holdem-v1/` (`spec.md`, plus one issue per file under `issues/`). Those issues replace the list below wherever the two differ.
@@ -70,7 +78,7 @@ The v1 plan is now specified in `.scratch/holdem-v1/` (`spec.md`, plus one issue
 - [ ] Rooms: create or join a game with a short room code; tell table clients and player clients apart.
 - [x] Card engine: deck, shuffle (crypto RNG). Dealing comes with the Hand state machine (issue 04).
 - [ ] Texas Hold'em rules: blinds, betting rounds, side pots, hand evaluation, showdown.
-- [ ] Client routes: landing (host a table / join a game), `/table`, `/play`.
+- [x] Client routes: landing (host a table / join a game), `/table`, `/play`.
 - [ ] Join flow: enter a room code on the phone and/or scan a QR code shown on the table screen.
 - [ ] Table view: community cards, pot, seats, chip stacks, whose turn it is.
 - [ ] Player view (mobile first): hole cards, chip stack, fold / check / call / raise with a bet slider.
