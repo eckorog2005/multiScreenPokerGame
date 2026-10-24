@@ -24,8 +24,19 @@ export type HandValue = {
 };
 
 const RANK_NAMES: Record<Rank, string> = {
-  '2': 'Two', '3': 'Three', '4': 'Four', '5': 'Five', '6': 'Six', '7': 'Seven', '8': 'Eight',
-  '9': 'Nine', T: 'Ten', J: 'Jack', Q: 'Queen', K: 'King', A: 'Ace',
+  '2': 'Two',
+  '3': 'Three',
+  '4': 'Four',
+  '5': 'Five',
+  '6': 'Six',
+  '7': 'Seven',
+  '8': 'Eight',
+  '9': 'Nine',
+  T: 'Ten',
+  J: 'Jack',
+  Q: 'Queen',
+  K: 'King',
+  A: 'Ace',
 };
 
 export function evaluateHand(holeCards: readonly Card[], board: readonly Card[]): HandValue {
@@ -94,9 +105,7 @@ function hand(category: HandCategory, cards: Card[], ranks: number[], descriptio
 function groupByRank(five: Card[]): Card[][] {
   const byRank = new Map<Rank, Card[]>();
   for (const card of five) byRank.set(card.rank, [...(byRank.get(card.rank) ?? []), card]);
-  return [...byRank.values()].sort(
-    (a, b) => b.length - a.length || rankValue(b[0]!.rank) - rankValue(a[0]!.rank),
-  );
+  return [...byRank.values()].sort((a, b) => b.length - a.length || rankValue(b[0]!.rank) - rankValue(a[0]!.rank));
 }
 
 function plural(name: string): string {

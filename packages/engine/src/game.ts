@@ -107,10 +107,7 @@ export function join(game: GameState, input: JoinInput): GameState | GameError {
     if (game.players.some((p) => p.name.toLowerCase() === name.toLowerCase())) {
       return fail('name-taken', `${name} is already taken`);
     }
-    players = [
-      ...game.players,
-      { id: playerId, name, seat, chips: game.startingStack, sittingOut: false, rebuys: 0 },
-    ];
+    players = [...game.players, { id: playerId, name, seat, chips: game.startingStack, sittingOut: false, rebuys: 0 }];
   }
   return { ...game, players, hostId: game.hostId ?? playerId };
 }

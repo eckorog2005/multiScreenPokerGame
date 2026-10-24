@@ -62,7 +62,14 @@ function errorOf(state: HandState, id: string, action: string) {
 
 describe('blinds', () => {
   test('three-handed: small blind left of the button, first to act left of the big blind', () => {
-    const { state } = start({ players: [['a', 1000], ['b', 1000], ['c', 1000]], button: 'a' });
+    const { state } = start({
+      players: [
+        ['a', 1000],
+        ['b', 1000],
+        ['c', 1000],
+      ],
+      button: 'a',
+    });
     expect(state.players.map((p) => [p.id, p.bet, p.stack])).toEqual([
       ['a', 0, 1000],
       ['b', 5, 995],
@@ -72,8 +79,17 @@ describe('blinds', () => {
   });
 
   test('heads-up: the button posts the small blind and acts first before the flop, last after it', () => {
-    const { state, total } = start({ players: [['a', 1000], ['b', 1000]], button: 'a' });
-    expect(state.players.map((p) => [p.id, p.bet])).toEqual([['a', 5], ['b', 10]]);
+    const { state, total } = start({
+      players: [
+        ['a', 1000],
+        ['b', 1000],
+      ],
+      button: 'a',
+    });
+    expect(state.players.map((p) => [p.id, p.bet])).toEqual([
+      ['a', 5],
+      ['b', 10],
+    ]);
     expect(state.toAct).toBe('a');
 
     const flop = play(state, total, 'a call', 'b check');
@@ -83,7 +99,14 @@ describe('blinds', () => {
   });
 
   test('a Player with fewer Chips than the blind posts it all-in for less', () => {
-    const { state } = start({ players: [['a', 1000], ['b', 3], ['c', 7]], button: 'a' });
+    const { state } = start({
+      players: [
+        ['a', 1000],
+        ['b', 3],
+        ['c', 7],
+      ],
+      button: 'a',
+    });
     const [, b, c] = state.players;
     expect([b!.bet, b!.stack, b!.allIn]).toEqual([3, 0, true]);
     expect([c!.bet, c!.stack, c!.allIn]).toEqual([7, 0, true]);
@@ -92,7 +115,13 @@ describe('blinds', () => {
   });
 
   test('blinds that put everyone all-in run the Board out immediately', () => {
-    const { state } = start({ players: [['a', 4], ['b', 8]], button: 'a' });
+    const { state } = start({
+      players: [
+        ['a', 4],
+        ['b', 8],
+      ],
+      button: 'a',
+    });
     expect(state.street).toBe('complete');
     expect(state.board).toHaveLength(5);
   });
@@ -100,7 +129,14 @@ describe('blinds', () => {
 
 describe('betting rounds', () => {
   test('pre-flop, flop, turn and river, in order, to a Showdown', () => {
-    const { state, total } = start({ players: [['a', 1000], ['b', 1000], ['c', 1000]], button: 'a' });
+    const { state, total } = start({
+      players: [
+        ['a', 1000],
+        ['b', 1000],
+        ['c', 1000],
+      ],
+      button: 'a',
+    });
     expect(state.street).toBe('preflop');
 
     const flop = play(state, total, 'a call', 'b call', 'c check');
@@ -118,14 +154,27 @@ describe('betting rounds', () => {
   });
 
   test('the big blind gets the option when everyone limps', () => {
-    const { state, total } = start({ players: [['a', 1000], ['b', 1000], ['c', 1000]], button: 'a' });
+    const { state, total } = start({
+      players: [
+        ['a', 1000],
+        ['b', 1000],
+        ['c', 1000],
+      ],
+      button: 'a',
+    });
     const afterLimps = play(state, total, 'a call', 'b call');
     expect(afterLimps.street).toBe('preflop');
     expect(afterLimps.legal!.actions).toContain('raise');
   });
 
   test('hole cards stay hidden until Showdown', () => {
-    const { state, total } = start({ players: [['a', 1000], ['b', 1000]], button: 'a' });
+    const { state, total } = start({
+      players: [
+        ['a', 1000],
+        ['b', 1000],
+      ],
+      button: 'a',
+    });
     expect(state.holeCardsRevealed).toBe(false);
     expect(play(state, total, 'a call').holeCardsRevealed).toBe(false);
   });
@@ -133,7 +182,14 @@ describe('betting rounds', () => {
 
 describe('legal actions', () => {
   test('expose the current Player, their options and the raise range', () => {
-    const { state } = start({ players: [['a', 1000], ['b', 1000], ['c', 100]], button: 'a' });
+    const { state } = start({
+      players: [
+        ['a', 1000],
+        ['b', 1000],
+        ['c', 100],
+      ],
+      button: 'a',
+    });
     expect(state.legal).toEqual({
       playerId: 'a',
       actions: ['fold', 'call', 'raise', 'all-in'],
@@ -144,19 +200,44 @@ describe('legal actions', () => {
   });
 
   test('check replaces call and bet replaces raise when nothing has been bet', () => {
-    const { state, total } = start({ players: [['a', 1000], ['b', 1000]], button: 'a' });
+    const { state, total } = start({
+      players: [
+        ['a', 1000],
+        ['b', 1000],
+      ],
+      button: 'a',
+    });
     const flop = play(state, total, 'a call', 'b check');
-    expect(flop.legal).toMatchObject({ actions: ['fold', 'check', 'bet', 'all-in'], toCall: 0, minRaiseTo: 10, maxRaiseTo: 990 });
+    expect(flop.legal).toMatchObject({
+      actions: ['fold', 'check', 'bet', 'all-in'],
+      toCall: 0,
+      minRaiseTo: 10,
+      maxRaiseTo: 990,
+    });
   });
 
   test('a short stack can only call all-in or fold', () => {
-    const { state } = start({ players: [['a', 6], ['b', 1000], ['c', 1000]], button: 'a' });
+    const { state } = start({
+      players: [
+        ['a', 6],
+        ['b', 1000],
+        ['c', 1000],
+      ],
+      button: 'a',
+    });
     expect(state.legal).toMatchObject({ playerId: 'a', actions: ['fold', 'call', 'all-in'], toCall: 6 });
     expect(state.legal!.minRaiseTo).toBeUndefined();
   });
 
   test('rejects actions out of turn, illegal actions and bad amounts', () => {
-    const { state } = start({ players: [['a', 1000], ['b', 1000], ['c', 1000]], button: 'a' });
+    const { state } = start({
+      players: [
+        ['a', 1000],
+        ['b', 1000],
+        ['c', 1000],
+      ],
+      button: 'a',
+    });
     expect(errorOf(state, 'b', 'call')).toBe('not-your-turn');
     expect(errorOf(state, 'a', 'check')).toBe('illegal-action');
     expect(errorOf(state, 'a', 'bet 50')).toBe('illegal-action');
@@ -169,7 +250,14 @@ describe('legal actions', () => {
 
 describe('minimum raise', () => {
   test('equals the previous raise', () => {
-    const { state, total } = start({ players: [['a', 1000], ['b', 1000], ['c', 1000]], button: 'a' });
+    const { state, total } = start({
+      players: [
+        ['a', 1000],
+        ['b', 1000],
+        ['c', 1000],
+      ],
+      button: 'a',
+    });
     const afterRaise = play(state, total, 'a raise 30');
     expect(afterRaise.legal).toMatchObject({ playerId: 'b', minRaiseTo: 50 });
     expect(errorOf(afterRaise, 'b', 'raise 49')).toBe('invalid-amount');
@@ -179,7 +267,13 @@ describe('minimum raise', () => {
   });
 
   test('after the flop the minimum bet is the big blind and a raise must match the bet', () => {
-    const { state, total } = start({ players: [['a', 1000], ['b', 1000]], button: 'a' });
+    const { state, total } = start({
+      players: [
+        ['a', 1000],
+        ['b', 1000],
+      ],
+      button: 'a',
+    });
     const flop = play(state, total, 'a call', 'b check');
     expect(errorOf(flop, 'b', 'bet 9')).toBe('invalid-amount');
     const afterBet = play(flop, total, 'b bet 40');
@@ -187,7 +281,14 @@ describe('minimum raise', () => {
   });
 
   test('a Player can go all-in for less than the minimum raise', () => {
-    const { state, total } = start({ players: [['a', 1000], ['b', 1000], ['c', 25]], button: 'a' });
+    const { state, total } = start({
+      players: [
+        ['a', 1000],
+        ['b', 1000],
+        ['c', 25],
+      ],
+      button: 'a',
+    });
     expect(state.legal!.actions).toContain('all-in');
     const afterShove = play(state, total, 'a raise 100', 'b call', 'c allin');
     expect(afterShove.street).not.toBe('complete');
@@ -196,7 +297,11 @@ describe('minimum raise', () => {
 
 describe('reopening the betting', () => {
   const stacks = (c: number): Setup => ({
-    players: [['a', 1000], ['b', 1000], ['c', c]],
+    players: [
+      ['a', 1000],
+      ['b', 1000],
+      ['c', c],
+    ],
     button: 'a',
   });
 
@@ -224,7 +329,12 @@ describe('reopening the betting', () => {
 describe('side pots and awards', () => {
   test('a three-way all-in creates two side pots, each awarded to its best eligible hand', () => {
     const { state, total } = start({
-      players: [['a', 100], ['b', 200], ['c', 300], ['d', 1000]],
+      players: [
+        ['a', 100],
+        ['b', 200],
+        ['c', 300],
+        ['d', 1000],
+      ],
       button: 'd',
       holes: { a: 'Ah Ac', b: 'Kh Kc', c: 'Qh Qc', d: '7c 2h' },
       board: '2s 8d 9h Jc 3s',
@@ -243,7 +353,10 @@ describe('side pots and awards', () => {
 
   test('uncalled chips go back to the bettor', () => {
     const { state, total } = start({
-      players: [['a', 1000], ['b', 50]],
+      players: [
+        ['a', 1000],
+        ['b', 50],
+      ],
       button: 'a',
       holes: { a: 'Ah Ac', b: '7c 2h' },
       board: 'Ks 8d 9h Jc 3s',
@@ -255,27 +368,51 @@ describe('side pots and awards', () => {
 
   test('a split pot divides evenly and the odd Chip goes to the first winner clockwise from the button', () => {
     const { state, total } = start({
-      players: [['a', 1000], ['b', 1000], ['c', 1000]],
+      players: [
+        ['a', 1000],
+        ['b', 1000],
+        ['c', 1000],
+      ],
       button: 'c',
       holes: { b: '2c 3d', c: '4h 5s' },
       board: 'Ts Jd Qh Kc As',
     });
-    const done = play(state, total, 'c call', 'a fold', 'b check', 'b check', 'c check', 'b check', 'c check', 'b check', 'c check');
+    const done = play(
+      state,
+      total,
+      'c call',
+      'a fold',
+      'b check',
+      'b check',
+      'c check',
+      'b check',
+      'c check',
+      'b check',
+      'c check',
+    );
 
     expect(done.result!.pots).toHaveLength(1);
-    expect(done.result!.pots[0]!.winners.map((w) => [w.playerId, w.amount])).toEqual([['b', 13], ['c', 12]]);
+    expect(done.result!.pots[0]!.winners.map((w) => [w.playerId, w.amount])).toEqual([
+      ['b', 13],
+      ['c', 12],
+    ]);
     expect(done.players.map((p) => p.stack)).toEqual([995, 1003, 1002]);
   });
 
   test('the result lists the hand descriptions', () => {
     const { state, total } = start({
-      players: [['a', 1000], ['b', 1000]],
+      players: [
+        ['a', 1000],
+        ['b', 1000],
+      ],
       button: 'a',
       holes: { a: 'Ks 7d', b: 'Qs Qd' },
       board: '7c Kh 2s 9d 3c',
     });
     const done = play(state, total, 'a allin', 'b call');
-    expect(done.result!.pots[0]!.winners).toEqual([{ playerId: 'a', amount: 2000, description: 'Two Pair, Kings and Sevens' }]);
+    expect(done.result!.pots[0]!.winners).toEqual([
+      { playerId: 'a', amount: 2000, description: 'Two Pair, Kings and Sevens' },
+    ]);
     expect(done.result!.hands).toEqual([
       { playerId: 'a', description: 'Two Pair, Kings and Sevens' },
       { playerId: 'b', description: 'Pair of Queens' },
@@ -285,7 +422,14 @@ describe('side pots and awards', () => {
 
 describe('ending without a Showdown', () => {
   test('when everyone else folds the Hand ends and the winner can choose to show', () => {
-    const { state, total } = start({ players: [['a', 1000], ['b', 1000], ['c', 1000]], button: 'a' });
+    const { state, total } = start({
+      players: [
+        ['a', 1000],
+        ['b', 1000],
+        ['c', 1000],
+      ],
+      button: 'a',
+    });
     const done = play(state, total, 'a fold', 'b fold');
 
     expect(done.street).toBe('complete');
@@ -301,7 +445,13 @@ describe('ending without a Showdown', () => {
   });
 
   test('folding after a bet awards the pot without revealing cards', () => {
-    const { state, total } = start({ players: [['a', 1000], ['b', 1000]], button: 'a' });
+    const { state, total } = start({
+      players: [
+        ['a', 1000],
+        ['b', 1000],
+      ],
+      button: 'a',
+    });
     const flop = play(state, total, 'a call', 'b check');
     const done = play(flop, total, 'b bet 50', 'a fold');
     expect(done.result!.showdown).toBe(false);
@@ -312,7 +462,10 @@ describe('ending without a Showdown', () => {
 describe('all-in runout', () => {
   test('deals the rest of the Board and reveals the Hole Cards', () => {
     const { state, total } = start({
-      players: [['a', 1000], ['b', 1000]],
+      players: [
+        ['a', 1000],
+        ['b', 1000],
+      ],
       button: 'a',
       holes: { a: 'Ah Ac', b: 'Kh Kc' },
       board: '2s 8d 9h Jc 3s',
@@ -326,7 +479,14 @@ describe('all-in runout', () => {
   });
 
   test('runs out from a later street when the last bet is called all-in', () => {
-    const { state, total } = start({ players: [['a', 1000], ['b', 1000], ['c', 1000]], button: 'a' });
+    const { state, total } = start({
+      players: [
+        ['a', 1000],
+        ['b', 1000],
+        ['c', 1000],
+      ],
+      button: 'a',
+    });
     const flop = play(state, total, 'a call', 'b call', 'c check');
     const done = play(flop, total, 'b allin', 'c fold', 'a call');
     expect(done.board).toHaveLength(5);
@@ -334,7 +494,14 @@ describe('all-in runout', () => {
   });
 
   test('does not ask the last Player with Chips to act when nobody can bet against them', () => {
-    const { state, total } = start({ players: [['a', 1000], ['b', 1000], ['c', 20]], button: 'a' });
+    const { state, total } = start({
+      players: [
+        ['a', 1000],
+        ['b', 1000],
+        ['c', 20],
+      ],
+      button: 'a',
+    });
     const done = play(state, total, 'a call', 'b call', 'c allin', 'a call', 'b call');
     expect(done.street).not.toBe('preflop');
   });

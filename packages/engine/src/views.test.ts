@@ -11,7 +11,10 @@ function ok(result: GameState | { error: string; message: string }): GameState {
 }
 
 function table(...ids: string[]): GameState {
-  const game = ids.reduce((g, id, i) => ok(join(g, { playerId: id, name: id.toUpperCase(), seat: i + 1 })), createGame());
+  const game = ids.reduce(
+    (g, id, i) => ok(join(g, { playerId: id, name: id.toUpperCase(), seat: i + 1 })),
+    createGame(),
+  );
   return ok(dealHand(game, { by: ids[0], rng: first }));
 }
 
@@ -34,7 +37,10 @@ function toShowdown(game: GameState): GameState {
 
 const holes = (game: GameState, id: string): Card[] => [...game.hand!.players.find((p) => p.id === id)!.holeCards];
 const shows = (view: unknown, card: Card): boolean => JSON.stringify(view).includes(JSON.stringify(card));
-const hidden = (game: GameState, ids: string[]): Card[] => [...game.hand!.deck, ...ids.flatMap((id) => holes(game, id))];
+const hidden = (game: GameState, ids: string[]): Card[] => [
+  ...game.hand!.deck,
+  ...ids.flatMap((id) => holes(game, id)),
+];
 
 describe('tableView', () => {
   test('shows no Hole Cards and no deck mid-Hand', () => {
@@ -79,7 +85,8 @@ describe('tableView', () => {
 
     view = tableView(play(won, 'c show'));
     for (const card of holes(won, 'c')) expect(shows(view, card)).toBe(true);
-    for (const card of [...holes(won, 'a'), ...holes(won, 'b'), ...won.hand!.deck]) expect(shows(view, card)).toBe(false);
+    for (const card of [...holes(won, 'a'), ...holes(won, 'b'), ...won.hand!.deck])
+      expect(shows(view, card)).toBe(false);
   });
 
   test('has no hand before the first deal', () => {
@@ -103,11 +110,16 @@ describe('playerView', () => {
     expect(view.you.holeCards).toEqual(holes(game, 'b'));
   });
 
-  test('gives legal actions and amounts only on the Player\'s turn, with the amount to call', () => {
+  test("gives legal actions and amounts only on the Player's turn, with the amount to call", () => {
     const game = table('a', 'b', 'c');
     const turn = playerView(game, 'a').you;
     expect(turn.toCall).toBe(10);
-    expect(turn.legal).toMatchObject({ actions: ['fold', 'call', 'raise', 'all-in'], toCall: 10, minRaiseTo: 20, maxRaiseTo: 1000 });
+    expect(turn.legal).toMatchObject({
+      actions: ['fold', 'call', 'raise', 'all-in'],
+      toCall: 10,
+      minRaiseTo: 20,
+      maxRaiseTo: 1000,
+    });
 
     const waiting = playerView(game, 'b').you;
     expect(waiting.legal).toBeNull();
@@ -117,7 +129,8 @@ describe('playerView', () => {
   test('other Players follow the same reveal rules as the Table', () => {
     const game = toShowdown(play(table('a', 'b', 'c'), 'a fold'));
     const view = playerView(game, 'a');
-    for (const card of [...holes(game, 'b'), ...holes(game, 'c'), ...holes(game, 'a')]) expect(shows(view, card)).toBe(true);
+    for (const card of [...holes(game, 'b'), ...holes(game, 'c'), ...holes(game, 'a')])
+      expect(shows(view, card)).toBe(true);
     for (const card of game.hand!.deck) expect(shows(view, card)).toBe(false);
   });
 
@@ -135,7 +148,10 @@ describe('playerView', () => {
 
   test('describes the Player and Host status', () => {
     const view = playerView(table('a', 'b'), 'a');
-    expect(view).toMatchObject({ role: 'player', you: { playerId: 'a', name: 'A', isHost: true, rebuys: 0, sittingOut: false } });
+    expect(view).toMatchObject({
+      role: 'player',
+      you: { playerId: 'a', name: 'A', isHost: true, rebuys: 0, sittingOut: false },
+    });
   });
 
   test('rejects an unknown Player', () => {
@@ -151,8 +167,7 @@ describe('connection status', () => {
   test('marks seats connected unless the predicate says otherwise', () => {
     const game = table('a', 'b');
 
-    const seats = (isConnected?: (id: string) => boolean) =>
-      tableView(game, isConnected).seats.map((s) => s.connected);
+    const seats = (isConnected?: (id: string) => boolean) => tableView(game, isConnected).seats.map((s) => s.connected);
 
     expect(seats()).toEqual([true, true]);
     expect(seats((id) => id === 'a')).toEqual([true, false]);
