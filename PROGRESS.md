@@ -58,7 +58,7 @@ The engine (rules, Game, views) and the WebSocket server (create, join, resume, 
 
 - [x] 2026-10-23: CI and formatting (issue 15).
   - Prettier (`.prettierrc.json`, single quotes, width 120) formats the whole repo. The reformat commit is listed in `.git-blame-ignore-revs`.
-  - `.github/workflows/ci.yml` runs on pushes and PRs to `main`: a "Format and lint" job and a "Build and test" job, both on Node 24 (the Node 22 job was dropped on 2026-10-24, when `engines` moved to Node >= 24). A newer push to a PR cancels the older run.
+  - `.github/workflows/ci.yml` runs on pushes and PRs to `main`: a "Format and lint" job and a "Build and test" job, both on Node 26 (the Node 22 job was dropped on 2026-10-24, when `engines` moved to Node >= 24; both moved to Node 26 on 2026-10-25, with `engines` at Node >= 26 and `.nvmrc` pinning 26). A newer push to a PR cancels the older run.
   - The shared `.github/actions/setup` action enables pnpm through corepack and caches the pnpm store by lockfile hash.
   - `pnpm check` runs the same steps locally.
 

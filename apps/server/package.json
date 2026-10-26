@@ -12,7 +12,7 @@
     "lint": "oxlint"
   },
   "engines": {
-    "node": ">=24"
+    "node": ">=26"
   },
   "author": "Roger Lamb",
   "license": "MIT",
@@ -24,7 +24,7 @@
     "fastify": "^5.12.5"
   },
   "devDependencies": {
-    "@types/node": "^24.13.3",
+    "@types/node": "^26.6.5",
     "@types/ws": "^8.18.2",
     "oxlint": "^1.81.0",
     "typescript": "~6.0.2"

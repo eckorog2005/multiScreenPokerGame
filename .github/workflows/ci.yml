@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
         with:
-          node-version: 24
+          node-version: 26
       - name: Check formatting
         run: pnpm format:check
       - name: Lint
@@ -41,7 +41,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
         with:
-          node-version: 24
+          node-version: 26
       - name: Build and typecheck
         run: pnpm build
       - name: Test

@@ -17,7 +17,9 @@ runs:
     # setup-node's built-in pnpm cache needs pnpm on PATH first, so the store is cached by hand.
     - name: Enable pnpm
       shell: bash
+      # Node 25+ no longer bundles corepack.
       run: |
+        npm install --global corepack@latest
         corepack enable
         echo "store=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
       id: pnpm

@@ -14,7 +14,7 @@
     "check": "pnpm format:check && pnpm lint && pnpm build && pnpm test"
   },
   "engines": {
-    "node": ">=24"
+    "node": ">=26"
   },
   "author": "Roger Lamb",
   "license": "MIT",
