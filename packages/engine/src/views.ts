@@ -3,6 +3,7 @@ import type {
   HandView,
   LegalActionsView,
   PlayerView,
+  PotInPlayView,
   ResultView,
   SeatView,
   TableView,
@@ -17,6 +18,7 @@ type IsConnected = (playerId: string) => boolean;
 export type ViewContext = {
   readonly isConnected?: IsConnected;
   readonly paused?: boolean;
+  readonly ended?: boolean;
   readonly turnTimeLeftMs?: number | null;
   /** The Host has been disconnected long enough for another Player to claim the role. */
   readonly hostClaimable?: boolean;
@@ -77,6 +79,7 @@ function baseView(game: GameState, context: ViewContext): GameViewBase {
     bigBlind: game.bigBlind,
     turnTimerSeconds: game.turnTimerSeconds,
     paused: context.paused ?? false,
+    ended: context.ended ?? false,
     seats: seatViews(game, context.isConnected ?? allConnected),
     hand: handView(game, context.turnTimeLeftMs ?? null),
     standings: standings(game),
@@ -97,6 +100,7 @@ function seatViews(game: GameState, isConnected: IsConnected): SeatView[] {
         bet: inHand?.bet ?? 0,
         isHost: game.hostId === p.id,
         isButton: game.button === p.seat,
+        blind: blindOf(game.hand, p.seat),
         sittingOut: p.sittingOut,
         connected: isConnected(p.id),
         inHand: inHand !== undefined,
@@ -124,11 +128,36 @@ function handView(game: GameState, turnTimeLeftMs: number | null): HandView | nu
     street: hand.street,
     board: hand.board,
     pot: hand.players.reduce((sum, p) => sum + p.committed, 0),
+    pots: potsInPlay(hand.players),
     currentBet: hand.currentBet,
     toAct: hand.toAct,
     turnTimeLeftMs: hand.toAct === null ? null : turnTimeLeftMs,
     result,
   };
+}
+
+function potsInPlay(players: readonly HandPlayer[]): PotInPlayView[] {
+  const live = players.filter((p) => !p.folded);
+  const caps = [...new Set(live.filter((p) => p.allIn).map((p) => p.committed))].sort((a, b) => a - b);
+  const pots: { amount: number; eligible: string[] }[] = [];
+  let previous = 0;
+  for (const level of [...caps, Infinity]) {
+    const amount = players.reduce((sum, p) => sum + Math.min(p.committed, level) - Math.min(p.committed, previous), 0);
+    const eligible = live.filter((p) => !p.allIn || p.committed >= level).map((p) => p.id);
+    if (amount > 0) {
+      // Chips a folded Player put in above every live all-in have no one to match them, so they join the last pot.
+      if (eligible.length === 0 && pots.length > 0) pots.at(-1)!.amount += amount;
+      else pots.push({ amount, eligible });
+    }
+    previous = level;
+  }
+  return pots;
+}
+
+function blindOf(hand: HandState | null, seat: number): SeatView['blind'] {
+  if (hand?.smallBlindSeat === seat) return 'small';
+  if (hand?.bigBlindSeat === seat) return 'big';
+  return null;
 }
 
 function chipsOf(game: GameState, player: GamePlayer, inHand: HandPlayer | undefined): number {

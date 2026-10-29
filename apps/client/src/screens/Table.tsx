@@ -1,10 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router';
 import { QRCodeSVG } from 'qrcode.react';
-import { MAX_SEATS } from '@poker/engine';
-import type { TableView } from '@poker/protocol';
 import { useConnection } from '../connection/use-connection.ts';
 import { joinUrl } from '../join-url.ts';
+import TableTop from '../table/TableTop.tsx';
 
 function Table() {
   const [params, setParams] = useSearchParams();
@@ -44,35 +43,14 @@ function Table() {
 
   const url = joinUrl(code);
   return (
-    <main>
-      <h1 className="game-code">{code}</h1>
-      <QRCodeSVG value={url} size={256} marginSize={2} title={`QR code to join Game ${code}`} role="img" />
-      <p>{url}</p>
-      {view?.role === 'table' && <Seats view={view} />}
+    <main className="table-screen">
+      <aside className="join-corner" aria-label="Join this Game">
+        <h1 className="game-code">{code}</h1>
+        <QRCodeSVG value={url} size={160} marginSize={2} title={`QR code to join Game ${code}`} role="img" />
+        <p>{url}</p>
+      </aside>
+      {view?.role === 'table' && <TableTop view={view} />}
     </main>
-  );
-}
-
-function Seats({ view }: { view: TableView }) {
-  const seatNumbers = Array.from({ length: MAX_SEATS }, (_, i) => i + 1);
-  return (
-    <ol className="seats">
-      {seatNumbers.map((number) => {
-        const seat = view.seats.find((s) => s.seat === number);
-        return (
-          <li key={number} aria-label={`Seat ${number}`}>
-            {seat ? (
-              <>
-                {seat.name}
-                {seat.isHost && <span className="badge">Host</span>}
-              </>
-            ) : (
-              <span className="empty">Empty</span>
-            )}
-          </li>
-        );
-      })}
-    </ol>
   );
 }
 

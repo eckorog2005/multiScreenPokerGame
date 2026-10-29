@@ -21,7 +21,7 @@ function table(...ids: string[]): GameState {
 function play(game: GameState, ...steps: string[]): GameState {
   return steps.reduce((g, step) => {
     const [id, type] = step.split(' ');
-    return ok(act(g, id!, { type: type as 'fold' | 'check' | 'call' | 'show' }));
+    return ok(act(g, id!, { type: type as 'fold' | 'check' | 'call' | 'all-in' | 'show' }));
   }, game);
 }
 
@@ -67,6 +67,41 @@ describe('tableView', () => {
       [2, 'B', 995, 5, false],
       [3, 'C', 990, 10, false],
     ]);
+  });
+
+  test('marks the small and big blind Seats, with the button on the small blind heads-up', () => {
+    expect(tableView(table('a', 'b', 'c')).seats.map((s) => s.blind)).toEqual([null, 'small', 'big']);
+    expect(tableView(table('a', 'b')).seats.map((s) => [s.isButton, s.blind])).toEqual([
+      [true, 'small'],
+      [false, 'big'],
+    ]);
+    expect(tableView(createGame()).seats).toEqual([]);
+  });
+
+  test('splits the pot into a main pot and side pots as all-ins cap it', () => {
+    const seated = ['a', 'b', 'c'].reduce(
+      (g, id, i) => ok(join(g, { playerId: id, name: id.toUpperCase(), seat: i + 1 })),
+      createGame(),
+    );
+    const short = { ...seated, players: seated.players.map((p) => (p.id === 'a' ? { ...p, chips: 100 } : p)) };
+    let game = ok(dealHand(short, { by: 'a', rng: first }));
+    expect(tableView(game).hand!.pots).toEqual([{ amount: 15, eligible: ['a', 'b', 'c'] }]);
+
+    game = play(game, 'a all-in', 'b call');
+    expect(tableView(game).hand!.pots).toEqual([{ amount: 210, eligible: ['a', 'b', 'c'] }]);
+
+    game = play(game, 'c call');
+    game = ok(act(game, 'b', { type: 'bet', amount: 200 }));
+    game = play(game, 'c call');
+    expect(tableView(game).hand!.pots).toEqual([
+      { amount: 300, eligible: ['a', 'b', 'c'] },
+      { amount: 400, eligible: ['b', 'c'] },
+    ]);
+  });
+
+  test('keeps folded Chips in the pot but drops the folded Player from it', () => {
+    const view = tableView(play(table('a', 'b', 'c'), 'a call', 'b fold'));
+    expect(view.hand!.pots).toEqual([{ amount: 25, eligible: ['a', 'c'] }]);
   });
 
   test('reveals every live hand at Showdown but not folded ones', () => {
@@ -195,6 +230,12 @@ describe('loop context', () => {
     const game = table('a', 'b');
     expect(tableView(game).paused).toBe(false);
     expect(tableView(game, { paused: true }).paused).toBe(true);
+  });
+
+  test('includes whether the Game has ended', () => {
+    const game = table('a', 'b');
+    expect(tableView(game).ended).toBe(false);
+    expect(tableView(game, { ended: true }).ended).toBe(true);
   });
 
   test('includes the turn time left only while someone is to act', () => {

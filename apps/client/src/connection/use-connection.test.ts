@@ -13,6 +13,7 @@ const tableView: TableView = {
   bigBlind: 10,
   turnTimerSeconds: null,
   paused: false,
+  ended: false,
   seats: [],
   hand: null,
   standings: [],

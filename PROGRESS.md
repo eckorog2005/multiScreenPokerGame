@@ -13,7 +13,7 @@ pnpm workspace (Node >= 24):
 
 ## Status
 
-The engine (rules, Game, views) and the WebSocket server (create, join, resume, leave, deal) are done. The join flow works end to end: the Table creates a Game and shows its Game Code, QR code and Seats, and Players join from `/play`. The server loop (auto-deal, turn timer, disconnects, Host claim, cleanup) is done; the Player Device can play a Hand (issue 11); the Table view and Host controls (issues 12–13) aren't built yet. In development the client proxies `/api` and `/ws` to the server.
+The engine (rules, Game, views) and the WebSocket server (create, join, resume, leave, deal) are done. The join flow works end to end: the Table creates a Game and shows its Game Code, QR code and Seats, and Players join from `/play`. The server loop (auto-deal, turn timer, disconnects, Host claim, cleanup) is done; the Player Device can play a Hand (issue 11) and the Table shows the Game (issue 12); Host controls (issue 13) aren't built yet. In development the client proxies `/api` and `/ws` to the server.
 
 ## Done
 
@@ -91,6 +91,11 @@ The engine (rules, Game, views) and the WebSocket server (create, join, resume, 
   - On the Player's turn the phone vibrates and the screen switches to a full-screen "Your turn" state. `useWakeLock()` keeps the screen awake while the Player is in a Game and re-requests the lock when the page is visible again.
   - Sit Out toggle, Leave (enabled between Hands or after folding), Rebuy (at 0 Chips between Hands), Show cards (after winning uncontested) and a reconnecting banner. The server now handles `sit-out` and `rebuy`.
   - Cards render through `src/CardFace.tsx`; client tests share view builders in `src/test-views.ts`.
+
+- [x] 2026-10-29: Table view (issue 12).
+  - `/table` renders `src/table/TableTop.tsx`: Seats around an oval (name, Chips, bet, Sitting Out / Disconnected / Folded / All-in, button and blind markers), the Board, the pot or main and side pots, and the Player to act highlighted with a local countdown of `hand.turnTimeLeftMs`. The Game Code and QR code stay in a corner.
+  - Showdown shows revealed cards and hand descriptions on the Seats and each pot's winners. Between Hands it says "Paused by Host", "Waiting for players" or, before the first Hand, "Waiting for the Host to deal".
+  - Views gained `SeatView.blind`, `HandView.pots` (`PotInPlayView`, cut at each live all-in) and `ended` (from `ViewContext.ended`). When `ended` is set, the Table shows the Standings sorted by net result; the server sets it once issue 13 adds end-game.
 
 ## Next up
 

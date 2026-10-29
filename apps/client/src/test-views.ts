@@ -1,4 +1,4 @@
-import type { HandView, PlayerView, SeatView, YouView } from '@poker/protocol';
+import type { HandView, PlayerView, SeatView, TableView, YouView } from '@poker/protocol';
 
 export const seat = (overrides: Partial<SeatView>): SeatView => ({
   seat: 1,
@@ -8,6 +8,7 @@ export const seat = (overrides: Partial<SeatView>): SeatView => ({
   bet: 0,
   isHost: false,
   isButton: false,
+  blind: null,
   sittingOut: false,
   connected: true,
   inHand: false,
@@ -15,6 +16,21 @@ export const seat = (overrides: Partial<SeatView>): SeatView => ({
   allIn: false,
   revealedCards: null,
   ...overrides,
+});
+
+export const tableView = (seats: SeatView[], rest: Partial<TableView> = {}): TableView => ({
+  role: 'table',
+  hostId: null,
+  startingStack: 1000,
+  smallBlind: 5,
+  bigBlind: 10,
+  turnTimerSeconds: null,
+  paused: false,
+  ended: false,
+  seats,
+  hand: null,
+  standings: [],
+  ...rest,
 });
 
 export const playerView = (you: Partial<YouView>, seats: SeatView[], rest: Partial<PlayerView> = {}): PlayerView => ({
@@ -25,6 +41,7 @@ export const playerView = (you: Partial<YouView>, seats: SeatView[], rest: Parti
   bigBlind: 10,
   turnTimerSeconds: null,
   paused: false,
+  ended: false,
   seats,
   hand: null,
   standings: [],
@@ -50,6 +67,7 @@ export const hand = (overrides: Partial<HandView>): HandView => ({
   street: 'preflop',
   board: [],
   pot: 15,
+  pots: [{ amount: 15, eligible: ['p1', 'p2'] }],
   currentBet: 10,
   toAct: null,
   turnTimeLeftMs: null,

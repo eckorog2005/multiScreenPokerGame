@@ -69,6 +69,8 @@ export type SeatView = {
   readonly bet: number;
   readonly isHost: boolean;
   readonly isButton: boolean;
+  /** Which blind the Seat posted in the current or last Hand. */
+  readonly blind: 'small' | 'big' | null;
   readonly sittingOut: boolean;
   readonly connected: boolean;
   readonly inHand: boolean;
@@ -77,6 +79,8 @@ export type SeatView = {
   /** Only present once the Player's cards are revealed to everyone. */
   readonly revealedCards: readonly [Card, Card] | null;
 };
+
+export type PotInPlayView = { readonly amount: number; readonly eligible: readonly string[] };
 
 export type PotView = {
   readonly amount: number;
@@ -95,6 +99,8 @@ export type HandView = {
   readonly street: Street;
   readonly board: readonly Card[];
   readonly pot: number;
+  /** Main pot first, then side pots; together they add up to `pot`. */
+  readonly pots: readonly PotInPlayView[];
   readonly currentBet: number;
   readonly toAct: string | null;
   /** Milliseconds left on the turn timer when the view was sent; null when the timer is off. */
@@ -117,6 +123,8 @@ export type GameViewBase = {
   readonly turnTimerSeconds: number | null;
   /** The Host paused auto-dealing between Hands. */
   readonly paused: boolean;
+  /** The Host ended the Game; the Table shows the Standings. */
+  readonly ended: boolean;
   readonly seats: readonly SeatView[];
   readonly hand: HandView | null;
   readonly standings: readonly StandingsRowView[];
