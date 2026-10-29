@@ -52,6 +52,8 @@ export type HandState = {
   readonly button: number;
   readonly smallBlind: number;
   readonly bigBlind: number;
+  readonly smallBlindSeat: number;
+  readonly bigBlindSeat: number;
   readonly street: Street;
   readonly board: readonly Card[];
   readonly deck: readonly Card[];
@@ -108,6 +110,9 @@ export function startHand(input: StartHandInput): HandState {
     for (const p of dealOrder) holes.get(p.id)!.push(deck.shift()!);
   }
 
+  const headsUp = seated.length === 2;
+  const sbSeat = headsUp ? dealOrder[1]!.seat : dealOrder[0]!.seat;
+  const bbSeat = headsUp ? dealOrder[0]!.seat : dealOrder[1]!.seat;
   const draft: Draft = {
     players: seated.map((p) => ({
       id: p.id,
@@ -123,6 +128,8 @@ export function startHand(input: StartHandInput): HandState {
     button,
     smallBlind,
     bigBlind,
+    smallBlindSeat: sbSeat,
+    bigBlindSeat: bbSeat,
     street: 'preflop',
     board: [],
     deck,
@@ -134,9 +141,6 @@ export function startHand(input: StartHandInput): HandState {
     result: null,
   };
 
-  const headsUp = seated.length === 2;
-  const sbSeat = headsUp ? dealOrder[1]!.seat : dealOrder[0]!.seat;
-  const bbSeat = headsUp ? dealOrder[0]!.seat : dealOrder[1]!.seat;
   postBlind(draft, sbSeat, smallBlind);
   postBlind(draft, bbSeat, bigBlind);
   draft.currentBet = Math.max(...draft.players.map((p) => p.bet));

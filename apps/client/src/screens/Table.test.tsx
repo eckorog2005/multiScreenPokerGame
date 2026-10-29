@@ -1,8 +1,8 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
-import type { SeatView, TableView } from '@poker/protocol';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { FakeWebSocket } from '../connection/fake-websocket.ts';
+import { hand, seat, tableView } from '../test-views.ts';
 import Table from './Table.tsx';
 
 function Location() {
@@ -23,36 +23,6 @@ function renderTable(url: string) {
   act(() => socket.serverOpen());
   return socket;
 }
-
-const seat = (overrides: Partial<SeatView>): SeatView => ({
-  seat: 1,
-  playerId: 'p1',
-  name: 'Ada',
-  chips: 1000,
-  bet: 0,
-  isHost: false,
-  isButton: false,
-  sittingOut: false,
-  connected: true,
-  inHand: false,
-  folded: false,
-  allIn: false,
-  revealedCards: null,
-  ...overrides,
-});
-
-const tableView = (seats: SeatView[], hostId: string | null = null): TableView => ({
-  role: 'table',
-  hostId,
-  startingStack: 1000,
-  smallBlind: 5,
-  bigBlind: 10,
-  turnTimerSeconds: null,
-  paused: false,
-  seats,
-  hand: null,
-  standings: [],
-});
 
 beforeEach(() => {
   FakeWebSocket.instances = [];
@@ -105,7 +75,7 @@ test('fills in Seats as Players join and marks the Host', () => {
       type: 'table-view',
       view: tableView(
         [seat({ seat: 3, playerId: 'p1', name: 'Ada', isHost: true }), seat({ seat: 7, playerId: 'p2', name: 'Bob' })],
-        'p1',
+        { hostId: 'p1' },
       ),
     }),
   );
@@ -114,4 +84,22 @@ test('fills in Seats as Players join and marks the Host', () => {
   expect(screen.getByRole('listitem', { name: 'Seat 3' })).toHaveTextContent('Host');
   expect(screen.getByRole('listitem', { name: 'Seat 7' })).toHaveTextContent('Bob');
   expect(screen.getByRole('listitem', { name: 'Seat 7' })).not.toHaveTextContent('Host');
+});
+
+test('keeps the Game Code and QR code up for late joiners while a Hand is played', () => {
+  const socket = renderTable('/table');
+  act(() => socket.serverSend({ type: 'game-created', code: 'ABCD' }));
+  act(() =>
+    socket.serverSend({
+      type: 'table-view',
+      view: tableView([seat({ seat: 1, inHand: true }), seat({ seat: 2, playerId: 'p2', inHand: true })], {
+        hand: hand({ toAct: 'p1' }),
+      }),
+    }),
+  );
+
+  const corner = screen.getByRole('complementary', { name: 'Join this Game' });
+  expect(within(corner).getByRole('heading', { name: 'ABCD' })).toBeInTheDocument();
+  expect(within(corner).getByRole('img', { name: /QR code/ })).toBeInTheDocument();
+  expect(screen.getByRole('region', { name: 'Board' })).toBeInTheDocument();
 });
