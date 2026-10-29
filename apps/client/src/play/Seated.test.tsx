@@ -203,3 +203,150 @@ test("the phone vibrates once when the Player's turn begins", () => {
 
   expect(vibrate).toHaveBeenCalledTimes(1);
 });
+
+const ann = seat({ seat: 3, playerId: 'p1', name: 'Ann' });
+const hostView = (rest: Partial<PlayerView> = {}, you = {}) =>
+  playerView({ seat: 5, isHost: true, ...you }, [ann, bob({ inHand: false, isHost: true })], rest);
+const hostCommands = (send: ReturnType<typeof renderSeated>['send']) =>
+  send.mock.calls.flatMap(([message]) => (message.type === 'host' ? [message.command] : []));
+
+test('before the first Hand the Host sets the stack, blinds and turn timer, then deals', async () => {
+  const user = userEvent.setup();
+  const { send } = renderSeated(hostView());
+
+  await user.clear(screen.getByLabelText('Starting stack'));
+  await user.type(screen.getByLabelText('Starting stack'), '500');
+  await user.clear(screen.getByLabelText('Small blind'));
+  await user.type(screen.getByLabelText('Small blind'), '10');
+  await user.clear(screen.getByLabelText('Big blind'));
+  await user.type(screen.getByLabelText('Big blind'), '20');
+  await user.type(screen.getByLabelText('Turn timer (seconds, blank for off)'), '30');
+  await user.click(screen.getByRole('button', { name: 'Deal' }));
+
+  expect(hostCommands(send)).toEqual([
+    { type: 'set-starting-stack', amount: 500 },
+    { type: 'set-blinds', smallBlind: 10, bigBlind: 20 },
+    { type: 'set-turn-timer', seconds: 30 },
+    { type: 'deal-hand' },
+  ]);
+});
+
+test('the first-Hand settings start from the current ones and refuse a big blind below the small blind', async () => {
+  const user = userEvent.setup();
+  const { send } = renderSeated(hostView({ turnTimerSeconds: 45 }));
+
+  expect(screen.getByLabelText('Starting stack')).toHaveValue(1000);
+  expect(screen.getByLabelText('Turn timer (seconds, blank for off)')).toHaveValue(45);
+  await user.clear(screen.getByLabelText('Big blind'));
+  await user.type(screen.getByLabelText('Big blind'), '2');
+  await user.click(screen.getByRole('button', { name: 'Deal' }));
+
+  expect(screen.getByRole('alert')).toHaveTextContent('The big blind must be at least the small blind.');
+  expect(send).not.toHaveBeenCalled();
+});
+
+test('only the Host sees Host controls', () => {
+  renderSeated(playerView({ seat: 5 }, [ann, bob({ inHand: false })]));
+
+  expect(screen.queryByRole('region', { name: 'Host' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Deal' })).not.toBeInTheDocument();
+});
+
+const handOver = hand({ street: 'complete', currentBet: 0 });
+
+test('between Hands the Host can pause and resume dealing', async () => {
+  const user = userEvent.setup();
+  const { send, rerender } = renderSeated(hostView({ hand: handOver }));
+
+  expect(screen.queryByRole('button', { name: 'Deal' })).not.toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'Pause dealing' }));
+  rerender(hostView({ hand: handOver, paused: true }));
+  await user.click(screen.getByRole('button', { name: 'Resume dealing' }));
+
+  expect(hostCommands(send)).toEqual([
+    { type: 'set-paused', paused: true },
+    { type: 'set-paused', paused: false },
+  ]);
+});
+
+test('between Hands the Host can change the blinds for the next Hand', async () => {
+  const user = userEvent.setup();
+  const { send } = renderSeated(hostView({ hand: handOver }));
+
+  await user.clear(screen.getByLabelText('Small blind'));
+  await user.type(screen.getByLabelText('Small blind'), '25');
+  await user.clear(screen.getByLabelText('Big blind'));
+  await user.type(screen.getByLabelText('Big blind'), '50');
+  await user.click(screen.getByRole('button', { name: 'Set blinds' }));
+
+  expect(hostCommands(send)).toEqual([{ type: 'set-blinds', smallBlind: 25, bigBlind: 50 }]);
+});
+
+test('during a Hand the Host cannot pause or change the blinds', () => {
+  renderSeated(hostView({ hand: hand({ toAct: 'p1' }) }));
+
+  expect(screen.queryByRole('button', { name: 'Pause dealing' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Set blinds' })).not.toBeInTheDocument();
+});
+
+test("on a disconnected Player's turn the Host can fold for them", async () => {
+  const user = userEvent.setup();
+  const view = playerView(
+    { seat: 5, isHost: true, canFoldFor: true },
+    [seat({ seat: 3, playerId: 'p1', name: 'Ann', inHand: true, connected: false }), bob({ isHost: true })],
+    { hand: hand({ toAct: 'p1' }) },
+  );
+  const { send } = renderSeated(view);
+
+  await user.click(screen.getByRole('button', { name: 'Fold for Ann' }));
+
+  expect(hostCommands(send)).toEqual([{ type: 'fold-for' }]);
+});
+
+test('the Host removes a Player only after confirming', async () => {
+  const user = userEvent.setup();
+  const { send } = renderSeated(hostView({ hand: hand({ toAct: 'p1' }) }));
+
+  await user.click(screen.getByRole('button', { name: 'Remove Ann' }));
+  await user.click(screen.getByRole('button', { name: 'Cancel' }));
+  expect(send).not.toHaveBeenCalled();
+
+  await user.click(screen.getByRole('button', { name: 'Remove Ann' }));
+  expect(screen.getByText('Remove Ann from the Game? Their Chips leave with them.')).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'Yes, remove Ann' }));
+
+  expect(hostCommands(send)).toEqual([{ type: 'remove-player', playerId: 'p1' }]);
+});
+
+test('the Host hands the role to another Player', async () => {
+  const user = userEvent.setup();
+  const { send } = renderSeated(hostView());
+
+  expect(screen.queryByRole('button', { name: 'Make Bob Host' })).not.toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'Make Ann Host' }));
+
+  expect(hostCommands(send)).toEqual([{ type: 'transfer-host', playerId: 'p1' }]);
+});
+
+test('the Host ends the Game only after confirming', async () => {
+  const user = userEvent.setup();
+  const { send } = renderSeated(hostView({ hand: handOver }));
+
+  await user.click(screen.getByRole('button', { name: 'End Game' }));
+  expect(send).not.toHaveBeenCalled();
+  await user.click(screen.getByRole('button', { name: 'Yes, end the Game' }));
+
+  expect(hostCommands(send)).toEqual([{ type: 'end-game' }]);
+});
+
+test('any Player can claim Host once the Host has been gone for a minute', async () => {
+  const user = userEvent.setup();
+  const view = playerView({ seat: 5 }, [ann, bob({ inHand: false })]);
+  const { send, rerender } = renderSeated(view);
+  expect(screen.queryByRole('button', { name: 'Claim Host' })).not.toBeInTheDocument();
+
+  rerender({ ...view, you: { ...view.you, canClaimHost: true } });
+  await user.click(screen.getByRole('button', { name: 'Claim Host' }));
+
+  expect(send).toHaveBeenCalledWith({ type: 'claim-host' });
+});

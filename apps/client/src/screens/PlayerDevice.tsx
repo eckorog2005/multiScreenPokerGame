@@ -10,6 +10,7 @@ import {
   type ServerError,
 } from '../connection/use-connection.ts';
 import Seated from '../play/Seated.tsx';
+import { signed } from '../signed.ts';
 import { useWakeLock } from '../play/use-wake-lock.ts';
 
 type Seats = GameSeatsResponse['seats'];
@@ -151,6 +152,7 @@ function Joined({
 }) {
   const { you } = view;
   useWakeLock();
+  if (view.ended) return <GameEnded view={view} />;
   if (you.seat !== null) return <Seated view={view} status={status} notice={notice} send={send} />;
   return (
     <main>
@@ -160,6 +162,16 @@ function Joined({
       </p>
       {notice && <p role="alert">{notice}</p>}
       <SeatPicker seats={view.seats} onPick={(seat) => send({ type: 'take-seat', seat })} />
+    </main>
+  );
+}
+
+function GameEnded({ view }: { view: PlayerView }) {
+  const net = view.standings.find((row) => row.playerId === view.you.playerId)?.net ?? 0;
+  return (
+    <main>
+      <h1>The Game has ended</h1>
+      <p>You finished {signed(net)} Chips. The Standings are on the Table.</p>
     </main>
   );
 }
@@ -200,6 +212,8 @@ function errorText({ error, message }: ServerError, code: string): string {
       return `No Game has the code ${code}.`;
     case 'unknown-player':
       return 'Your Seat in that Game was not found. Join again.';
+    case 'removed':
+      return 'The Host removed you from the Game.';
     case 'name-taken':
       return 'That name is already taken in this Game.';
     case 'invalid-name':

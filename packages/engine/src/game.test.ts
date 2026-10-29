@@ -15,6 +15,7 @@ import {
   setStartingStack,
   setTurnTimer,
   standings,
+  transferHost,
 } from './index.ts';
 import type { GameError, GameState, Rng } from './index.ts';
 
@@ -126,6 +127,18 @@ describe('Host', () => {
     const game = ok(leave(tableOf('a', 'b'), 'b'));
     expect(errorOf(claimHost(game, 'b'))).toBe('not-seated');
     expect(errorOf(claimHost(game, 'nobody'))).toBe('unknown-player');
+  });
+
+  test('the Host can hand the role to another seated Player', () => {
+    const game = ok(transferHost(tableOf('a', 'b'), 'a', 'b'));
+    expect(game.hostId).toBe('b');
+    expect(errorOf(transferHost(game, 'a', 'b'))).toBe('not-host');
+  });
+
+  test('the role can only go to a seated Player', () => {
+    const game = ok(leave(tableOf('a', 'b'), 'b'));
+    expect(errorOf(transferHost(game, 'a', 'b'))).toBe('not-seated');
+    expect(errorOf(transferHost(game, 'a', 'nobody'))).toBe('unknown-player');
   });
 });
 

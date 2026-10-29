@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react';
 import { MAX_SEATS } from '@poker/engine';
 import type { HandView, PotView, SeatView, TableView } from '@poker/protocol';
 import CardFace from '../CardFace.tsx';
+import { signed } from '../signed.ts';
 import { useSecondsLeft } from './use-seconds-left.ts';
 
 function TableTop({ view }: { view: TableView }) {
@@ -41,11 +42,6 @@ function Standings({ view }: { view: TableView }) {
       </tbody>
     </table>
   );
-}
-
-function signed(net: number): string {
-  if (net > 0) return `+${net}`;
-  return net < 0 ? `−${-net}` : '0';
 }
 
 function Seats({ view }: { view: TableView }) {

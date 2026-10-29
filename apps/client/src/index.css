@@ -197,6 +197,45 @@ label input {
   outline: 3px solid gold;
 }
 
+.host-controls {
+  margin-top: 16px;
+  padding-top: 8px;
+  border-top: 1px solid currentColor;
+}
+
+.host-controls h2 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+}
+
+.host-controls button {
+  min-height: 44px;
+  font-size: 1rem;
+}
+
+.host-players {
+  list-style: none;
+  padding: 0;
+}
+
+.host-players li,
+.confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-block: 8px;
+}
+
+.host-players li > :first-child {
+  margin-left: auto;
+}
+
+.danger {
+  background: firebrick;
+  color: white;
+}
+
 .table-screen {
   box-sizing: border-box;
   min-height: 100dvh;

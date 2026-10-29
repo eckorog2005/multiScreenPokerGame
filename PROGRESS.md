@@ -13,7 +13,7 @@ pnpm workspace (Node >= 24):
 
 ## Status
 
-The engine (rules, Game, views) and the WebSocket server (create, join, resume, leave, deal) are done. The join flow works end to end: the Table creates a Game and shows its Game Code, QR code and Seats, and Players join from `/play`. The server loop (auto-deal, turn timer, disconnects, Host claim, cleanup) is done; the Player Device can play a Hand (issue 11) and the Table shows the Game (issue 12); Host controls (issue 13) aren't built yet. In development the client proxies `/api` and `/ws` to the server.
+The engine (rules, Game, views) and the WebSocket server (create, join, resume, leave, deal) are done. The join flow works end to end: the Table creates a Game and shows its Game Code, QR code and Seats, and Players join from `/play`. The server loop (auto-deal, turn timer, disconnects, Host claim, cleanup) is done; the Player Device can play a Hand (issue 11), the Table shows the Game (issue 12) and the Host has admin controls on their phone (issue 13). In development the client proxies `/api` and `/ws` to the server.
 
 ## Done
 
@@ -96,6 +96,13 @@ The engine (rules, Game, views) and the WebSocket server (create, join, resume, 
   - `/table` renders `src/table/TableTop.tsx`: Seats around an oval (name, Chips, bet, Sitting Out / Disconnected / Folded / All-in, button and blind markers), the Board, the pot or main and side pots, and the Player to act highlighted with a local countdown of `hand.turnTimeLeftMs`. The Game Code and QR code stay in a corner.
   - Showdown shows revealed cards and hand descriptions on the Seats and each pot's winners. Between Hands it says "Paused by Host", "Waiting for players" or, before the first Hand, "Waiting for the Host to deal".
   - Views gained `SeatView.blind`, `HandView.pots` (`PotInPlayView`, cut at each live all-in) and `ended` (from `ViewContext.ended`). When `ended` is set, the Table shows the Standings sorted by net result; the server sets it once issue 13 adds end-game.
+
+- [x] 2026-10-29: Host controls (issue 13).
+  - The Host's phone shows a Host panel (`src/play/HostControls.tsx`). Before the first Hand it has a settings form (starting stack, blinds, turn timer with blank meaning off) whose Deal button sends `set-starting-stack`, `set-blinds`, `set-turn-timer` and `deal-hand` in that order. Between Hands it has Pause/Resume dealing and a blinds form. It also has Fold for <name> (when `you.canFoldFor`), Make <name> Host, Remove <name> and End Game; Remove and End Game ask for confirmation inline. Any Player sees Claim Host when `you.canClaimHost`.
+  - New engine command `transferHost` and Host command `transfer-host`. The server now handles every `HostCommand`; an unknown one is still `bad-message`.
+  - Removal deletes the server's Player, sends that phone a `removed` error and closes its socket. The connection hook forgets the Game on `removed` (as on `unknown-player`), so the phone goes back to the join form and rejoining makes a new Player.
+  - `end-game` sets `ServerGame.ended` (reaching views as `ended`): the turn, deal and host-claim timers stop, and every Player intent and `join` gets `game-ended`. `open-table` and `resume` still work, so the Table keeps showing the Standings until the Game is discarded as idle. A Hand in progress is abandoned, so Standings use the Chips from the last finished Hand. The phone shows "The Game has ended" with the Player's own net result.
+  - Server tests share their helpers through `test/helpers.ts`; Host tests are in `test/host.test.ts`.
 
 ## Next up
 

@@ -72,7 +72,10 @@ export function useConnection(): Connection {
         } else if (message.type === 'table-view' || message.type === 'player-view') {
           setView(message.view);
         } else if (message.type === 'error') {
-          if (attachRef.current && (message.error === 'unknown-game' || message.error === 'unknown-player')) {
+          if (
+            attachRef.current &&
+            (message.error === 'unknown-game' || message.error === 'unknown-player' || message.error === 'removed')
+          ) {
             forgetGame();
           }
           setError({ error: message.error, message: message.message });

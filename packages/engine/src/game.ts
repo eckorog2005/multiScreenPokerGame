@@ -171,6 +171,15 @@ export function claimHost(game: GameState, playerId: string): GameState | GameEr
   return { ...game, hostId: playerId };
 }
 
+export function transferHost(game: GameState, actorId: string, targetId: string): GameState | GameError {
+  const denied = requireHost(game, actorId);
+  if (denied) return denied;
+  const target = findPlayer(game, targetId);
+  if (!target) return unknownPlayer(targetId);
+  if (target.seat === null) return fail('not-seated', `${target.name} has no Seat`);
+  return { ...game, hostId: targetId };
+}
+
 export function setStartingStack(game: GameState, actorId: string, amount: number): GameState | GameError {
   const denied = requireHost(game, actorId);
   if (denied) return denied;

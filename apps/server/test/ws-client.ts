@@ -7,6 +7,7 @@ export type TestClient = {
   next(): Promise<ServerMessage>;
   nextOfType<T extends ServerMessage['type']>(type: T): Promise<Extract<ServerMessage, { type: T }>>;
   close(): Promise<void>;
+  readonly closed: Promise<void>;
 };
 
 export async function listen(app: FastifyInstance): Promise<string> {
@@ -29,6 +30,7 @@ export function connect(url: string): Promise<TestClient> {
       else received.push(message);
     });
     socket.addEventListener('error', () => reject(new Error('socket error')));
+    const closed = new Promise<void>((resolveClosed) => socket.addEventListener('close', () => resolveClosed()));
 
     const client: TestClient = {
       send: (message) => socket.send(JSON.stringify(message)),
@@ -44,6 +46,7 @@ export function connect(url: string): Promise<TestClient> {
           if (message.type === type) return message as never;
         }
       },
+      closed,
       close: () =>
         new Promise((resolveClose) => {
           if (socket.readyState === WebSocket.CLOSED) return resolveClose();

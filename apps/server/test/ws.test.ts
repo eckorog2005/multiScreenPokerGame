@@ -1,14 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildApp } from '../src/app.ts';
-import { connect, listen } from './ws-client.ts';
-
-async function start(t: { after(fn: () => unknown): void }) {
-  const app = buildApp();
-  t.after(() => app.close());
-  const url = await listen(app);
-  return { app, url };
-}
+import { start } from './helpers.ts';
+import { connect } from './ws-client.ts';
 
 test('create-game returns a Game Code and makes the socket a Table view', async (t) => {
   const { url } = await start(t);
@@ -261,11 +254,11 @@ test('a host message before joining is a not-joined error', async (t) => {
   assert.equal(((await phone.next()) as { error: string }).error, 'not-joined');
 });
 
-test('a Host command that is not supported yet is a bad-message error', async (t) => {
+test('an unknown Host command is a bad-message error', async (t) => {
   const { url } = await start(t);
   const { phone } = await seatedPlayer(url);
 
-  phone.send({ type: 'host', command: { type: 'end-game' } });
+  phone.sendRaw(JSON.stringify({ type: 'host', command: { type: 'shuffle-up' } }));
 
   assert.equal(((await phone.next()) as { error: string }).error, 'bad-message');
 });
