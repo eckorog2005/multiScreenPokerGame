@@ -10,10 +10,14 @@ import {
   leave,
   playerView,
   rebuy,
+  removePlayer,
+  setBlinds,
   setSittingOut,
+  setStartingStack,
   setTurnTimer,
   tableView,
   takeSeat,
+  transferHost,
 } from '@poker/engine';
 import type { GameState } from '@poker/engine';
 import type { ClientMessage, ErrorCode, HostCommand, ServerMessage } from '@poker/protocol';
@@ -35,7 +39,7 @@ export async function registerRealtime(app: FastifyInstance, { registry, clock, 
 
   app.get('/ws', { websocket: true }, (socket) => {
     let session: Session | null = null;
-    const screen: Screen = { send: (message) => socket.send(JSON.stringify(message)) };
+    const screen: Screen = { send: (message) => socket.send(JSON.stringify(message)), close: () => socket.close() };
     const fail = (error: ErrorCode, message: string) => screen.send(errorMessage(error, message));
 
     const handle = (message: ClientMessage) => {
@@ -52,6 +56,7 @@ export async function registerRealtime(app: FastifyInstance, { registry, clock, 
           return fail('not-joined', 'Join or resume a Game first');
         }
         const { game, playerId } = session;
+        if (game.ended) return fail('game-ended', 'The Game has ended');
         let next: GameState | Failure;
         if (message.type === 'leave') {
           next = leave(game.state, playerId);
@@ -93,6 +98,7 @@ export async function registerRealtime(app: FastifyInstance, { registry, clock, 
         game.tables.add(screen);
         session = { game, playerId: null };
       } else if (message.type === 'join') {
+        if (game.ended) return fail('game-ended', 'The Game has ended');
         const playerId = randomUUID();
         const next = join(game.state, { playerId, name: message.name, seat: message.seat });
         if (isGameError(next)) return fail(next.error, next.message);
@@ -145,9 +151,23 @@ type Session = { game: ServerGame; playerId: string | null };
 
 type Failure = { error: ErrorCode; message: string };
 
+const notHost: Failure = { error: 'not-host', message: 'Only the Host can do that' };
+
 function hostCommand(game: ServerGame, playerId: string, command: HostCommand, loop: Loop): GameState | Failure {
   if (command?.type === 'deal-hand') return loop.deal(game, playerId);
+  if (command?.type === 'set-starting-stack') return setStartingStack(game.state, playerId, command.amount);
+  if (command?.type === 'set-blinds') return setBlinds(game.state, playerId, command.smallBlind, command.bigBlind);
   if (command?.type === 'set-turn-timer') return setTurnTimer(game.state, playerId, command.seconds);
+  if (command?.type === 'transfer-host') return transferHost(game.state, playerId, command.playerId);
+  if (command?.type === 'remove-player') {
+    const next = removePlayer(game.state, playerId, command.playerId);
+    if (isGameError(next)) return next;
+    const removed = game.players.get(command.playerId);
+    game.players.delete(command.playerId);
+    removed?.screen?.send(errorMessage('removed', 'The Host removed you from the Game'));
+    removed?.screen?.close();
+    return next;
+  }
   if (command?.type === 'fold-for') {
     const toAct = game.state.hand?.toAct;
     if (toAct && game.state.hostId === playerId && isConnected(game)(toAct)) {
@@ -155,8 +175,13 @@ function hostCommand(game: ServerGame, playerId: string, command: HostCommand, l
     }
     return foldFor(game.state, playerId);
   }
+  if (command?.type === 'end-game') {
+    if (game.state.hostId !== playerId) return notHost;
+    game.ended = true;
+    return game.state;
+  }
   if (command?.type === 'set-paused') {
-    if (game.state.hostId !== playerId) return { error: 'not-host', message: 'Only the Host can do that' };
+    if (game.state.hostId !== playerId) return notHost;
     if (typeof command.paused !== 'boolean')
       return { error: 'invalid-setting', message: 'paused must be true or false' };
     game.paused = command.paused;

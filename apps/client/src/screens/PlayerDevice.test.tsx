@@ -4,7 +4,7 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import type { GameSeatsResponse } from '@poker/protocol';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { FakeWebSocket } from '../connection/fake-websocket.ts';
-import { saveToken } from '../connection/token-store.ts';
+import { loadToken, saveToken } from '../connection/token-store.ts';
 import { playerView, seat } from '../test-views.ts';
 import PlayerDevice from './PlayerDevice.tsx';
 
@@ -191,4 +191,32 @@ test('the screen is kept awake in a Game, and the lock is taken again when the p
   cleanup();
   await act(async () => {});
   expect(release).toHaveBeenCalled();
+});
+
+function seatedAs(view = playerView({ seat: 5 }, [])) {
+  saveToken('ABCD', 'secret');
+  const socket = renderPlay('/play?code=ABCD');
+  act(() => socket.serverSend({ type: 'joined', code: 'ABCD', playerId: 'p2', token: 'secret' }));
+  act(() => socket.serverSend({ type: 'player-view', view }));
+  return socket;
+}
+
+test('a removed Player is told so, forgets the Game and can join again as a new Player', () => {
+  const socket = seatedAs();
+
+  act(() => socket.serverSend({ type: 'error', error: 'removed', message: 'The Host removed you from the Game' }));
+  act(() => socket.serverDrop());
+
+  expect(screen.getByRole('alert')).toHaveTextContent('The Host removed you from the Game.');
+  expect(screen.getByLabelText('Game Code')).toHaveValue('ABCD');
+  expect(loadToken('ABCD')).toBeNull();
+});
+
+test('when the Game ends the phone shows the Player their result instead of the controls', () => {
+  const standings = [{ playerId: 'p2', name: 'Bob', net: -250, removed: false }];
+  seatedAs(playerView({ seat: 5, isHost: true }, [seat({ seat: 5, playerId: 'p2' })], { ended: true, standings }));
+
+  expect(screen.getByRole('heading', { name: 'The Game has ended' })).toBeInTheDocument();
+  expect(screen.getByText('You finished −250 Chips. The Standings are on the Table.')).toBeInTheDocument();
+  expect(screen.queryByRole('button')).not.toBeInTheDocument();
 });

@@ -35,6 +35,9 @@ export type ErrorCode =
   | 'not-joined'
   | 'cannot-fold-for'
   | 'cannot-claim-host'
+  /** The Host removed this Player; the server closes the socket next. */
+  | 'removed'
+  | 'game-ended'
   | 'bad-message';
 
 export type HostCommand =
@@ -45,6 +48,7 @@ export type HostCommand =
   | { readonly type: 'set-paused'; readonly paused: boolean }
   | { readonly type: 'remove-player'; readonly playerId: string }
   | { readonly type: 'fold-for' }
+  | { readonly type: 'transfer-host'; readonly playerId: string }
   | { readonly type: 'end-game' };
 
 export type ClientMessage =

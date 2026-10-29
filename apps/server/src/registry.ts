@@ -4,7 +4,7 @@ import { Timer, type Clock } from './clock.ts';
 const CODE_LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 const CODE_LENGTH = 4;
 
-export type Screen = { send(message: unknown): void };
+export type Screen = { send(message: unknown): void; close(): void };
 
 export type ServerPlayer = {
   readonly id: string;
@@ -25,6 +25,8 @@ export type ServerGame = {
   state: GameState;
   /** The Host paused auto-dealing between Hands. */
   paused: boolean;
+  /** The Host ended the Game; it stays watchable until it's discarded. */
+  ended: boolean;
   readonly tables: Set<Screen>;
   readonly players: Map<string, ServerPlayer>;
   readonly timers: GameTimers;
@@ -53,6 +55,7 @@ export class Registry {
       code: this.#newCode(),
       state: createGame(),
       paused: false,
+      ended: false,
       tables: new Set(),
       players: new Map(),
       timers,

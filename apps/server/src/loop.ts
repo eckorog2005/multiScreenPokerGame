@@ -57,7 +57,7 @@ export function createLoop({ clock, autoDealDelayMs, publish, discard }: LoopOpt
 
   const canAutoDeal = (game: ServerGame): boolean => {
     const { state } = game;
-    if (game.paused || state.handsDealt === 0 || state.hand?.street !== 'complete') return false;
+    if (game.ended || game.paused || state.handsDealt === 0 || state.hand?.street !== 'complete') return false;
     const connected = isConnected(game);
     const eligible = state.players.filter((p) => p.seat !== null && p.chips > 0 && !p.sittingOut && connected(p.id));
     return eligible.length >= 2;
@@ -68,7 +68,7 @@ export function createLoop({ clock, autoDealDelayMs, publish, discard }: LoopOpt
     const { state, timers } = game;
     const hand = state.hand;
 
-    if (hand && hand.street !== 'complete' && hand.toAct !== null && state.turnTimerSeconds !== null) {
+    if (!game.ended && hand && hand.street !== 'complete' && hand.toAct !== null && state.turnTimerSeconds !== null) {
       timers.turn.set(hand, state.turnTimerSeconds * 1000, () => timeOut(game));
     } else {
       timers.turn.clear();
@@ -78,7 +78,7 @@ export function createLoop({ clock, autoDealDelayMs, publish, discard }: LoopOpt
     else timers.deal.clear();
 
     const host = state.hostId === null ? undefined : game.players.get(state.hostId);
-    if (host?.disconnectedAt != null && !hostClaimable(game)) {
+    if (!game.ended && host?.disconnectedAt != null && !hostClaimable(game)) {
       const wait = host.disconnectedAt + HOST_CLAIM_AFTER_MS - clock.now();
       timers.hostClaim.set(host.disconnectedAt, wait, () => changed(game));
     } else {
@@ -96,6 +96,7 @@ export function createLoop({ clock, autoDealDelayMs, publish, discard }: LoopOpt
     return {
       isConnected: isConnected(game),
       paused: game.paused,
+      ended: game.ended,
       turnTimeLeftMs: turnEndsAt === null ? null : Math.max(turnEndsAt - clock.now(), 0),
       hostClaimable: hostClaimable(game),
     };

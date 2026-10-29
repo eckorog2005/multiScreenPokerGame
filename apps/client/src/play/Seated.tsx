@@ -4,6 +4,7 @@ import CardFace from '../CardFace.tsx';
 import type { Connection, ConnectionStatus } from '../connection/use-connection.ts';
 import { betPresets, clampBet, stepBet } from './bet.ts';
 import HoleCards from './HoleCards.tsx';
+import HostControls from './HostControls.tsx';
 
 type Send = Connection['send'];
 
@@ -43,6 +44,7 @@ function Seated({ view, status, send, notice = null }: Props) {
         <p>{handActive ? 'Waiting for your turn…' : 'Waiting for the next Hand…'}</p>
       )}
       <PlayerControls view={view} handActive={handActive} send={send} />
+      {you.isHost && <HostControls view={view} send={send} />}
     </main>
   );
 }
@@ -63,6 +65,11 @@ function PlayerControls({ view, handActive, send }: { view: PlayerView; handActi
       {canShow && (
         <button type="button" onClick={() => send({ type: 'action', action: { type: 'show' } })}>
           Show cards
+        </button>
+      )}
+      {you.canClaimHost && (
+        <button type="button" onClick={() => send({ type: 'claim-host' })}>
+          Claim Host
         </button>
       )}
       {you.chips === 0 && !handActive && (
