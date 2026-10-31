@@ -35,6 +35,7 @@ export type ErrorCode =
   | 'not-joined'
   | 'cannot-fold-for'
   | 'cannot-claim-host'
+  | 'table-full'
   /** The Host removed this Player; the server closes the socket next. */
   | 'removed'
   | 'game-ended'
@@ -47,6 +48,7 @@ export type HostCommand =
   | { readonly type: 'set-turn-timer'; readonly seconds: number | null }
   | { readonly type: 'set-paused'; readonly paused: boolean }
   | { readonly type: 'remove-player'; readonly playerId: string }
+  | { readonly type: 'add-bot' }
   | { readonly type: 'fold-for' }
   | { readonly type: 'transfer-host'; readonly playerId: string }
   | { readonly type: 'end-game' };
@@ -72,6 +74,7 @@ export type SeatView = {
   readonly chips: number;
   readonly bet: number;
   readonly isHost: boolean;
+  readonly bot: boolean;
   readonly isButton: boolean;
   /** Which blind the Seat posted in the current or last Hand. */
   readonly blind: 'small' | 'big' | null;

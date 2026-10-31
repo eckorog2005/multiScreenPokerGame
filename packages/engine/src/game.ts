@@ -8,6 +8,7 @@ export const MAX_SEATS = 9;
 export const DEFAULT_STARTING_STACK = 1000;
 export const DEFAULT_SMALL_BLIND = 5;
 export const DEFAULT_BIG_BLIND = 10;
+const BOT_NAMES = ['Ada', 'Ben', 'Cal', 'Dee', 'Eli', 'Fay', 'Gus', 'Hal', 'Ivy'];
 
 export type GamePlayer = {
   readonly id: string;
@@ -18,6 +19,8 @@ export type GamePlayer = {
   readonly chips: number;
   readonly sittingOut: boolean;
   readonly rebuys: number;
+  /** Run by the server; never Host. */
+  readonly bot?: boolean;
 };
 
 export type StandingsRow = {
@@ -58,7 +61,8 @@ export type GameErrorCode =
   | 'no-hand'
   | 'not-enough-players'
   | 'cannot-rebuy'
-  | 'cannot-leave';
+  | 'cannot-leave'
+  | 'table-full';
 
 export type GameError = { readonly error: GameErrorCode; readonly message: string };
 
@@ -164,6 +168,19 @@ export function removePlayer(game: GameState, actorId: string, targetId: string)
   };
 }
 
+export function addBot(game: GameState, actorId: string, botId: string): GameState | GameError {
+  const denied = requireHost(game, actorId);
+  if (denied) return denied;
+  if (handActive(game)) return fail('hand-in-progress', 'Bots can only be added between Hands');
+  const seat = Array.from({ length: MAX_SEATS }, (_, i) => i + 1).find((s) => !game.players.some((p) => p.seat === s));
+  if (seat === undefined) return fail('table-full', 'Every Seat is taken');
+  const taken = new Set(game.players.map((p) => p.name.toLowerCase()));
+  const name = BOT_NAMES.map((n) => `Bot ${n}`).find((n) => !taken.has(n.toLowerCase()));
+  if (name === undefined) return fail('name-taken', 'No Bot names are left');
+  const bot: GamePlayer = { id: botId, name, seat, chips: game.startingStack, sittingOut: false, rebuys: 0, bot: true };
+  return { ...game, players: [...game.players, bot] };
+}
+
 export function claimHost(game: GameState, playerId: string): GameState | GameError {
   const player = findPlayer(game, playerId);
   if (!player) return unknownPlayer(playerId);
@@ -177,6 +194,7 @@ export function transferHost(game: GameState, actorId: string, targetId: string)
   const target = findPlayer(game, targetId);
   if (!target) return unknownPlayer(targetId);
   if (target.seat === null) return fail('not-seated', `${target.name} has no Seat`);
+  if (target.bot) return fail('invalid-setting', 'A Bot cannot be Host');
   return { ...game, hostId: targetId };
 }
 
@@ -325,7 +343,7 @@ function nextHost(
 ): string | null {
   if (game.hostId !== leavingId) return game.hostId;
   const others = players
-    .filter((p): p is GamePlayer & { seat: number } => p.id !== leavingId && p.seat !== null)
+    .filter((p): p is GamePlayer & { seat: number } => p.id !== leavingId && p.seat !== null && !p.bot)
     .sort((a, b) => a.seat - b.seat);
   const next = others.find((p) => p.seat > (leavingSeat ?? 0)) ?? others[0];
   return next?.id ?? null;

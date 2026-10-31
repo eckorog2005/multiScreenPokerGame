@@ -7,6 +7,7 @@ export const seat = (overrides: Partial<SeatView>): SeatView => ({
   chips: 1000,
   bet: 0,
   isHost: false,
+  bot: false,
   isButton: false,
   blind: null,
   sittingOut: false,
