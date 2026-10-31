@@ -38,9 +38,11 @@ function HostControls({ view, send }: { view: PlayerView; send: Send }) {
           .map((s) => (
             <li key={s.playerId}>
               {s.name}
-              <button type="button" onClick={() => host({ type: 'transfer-host', playerId: s.playerId })}>
-                Make {s.name} Host
-              </button>
+              {!s.bot && (
+                <button type="button" onClick={() => host({ type: 'transfer-host', playerId: s.playerId })}>
+                  Make {s.name} Host
+                </button>
+              )}
               <Confirmed
                 label={`Remove ${s.name}`}
                 question={`Remove ${s.name} from the Game? Their Chips leave with them.`}
@@ -50,6 +52,11 @@ function HostControls({ view, send }: { view: PlayerView; send: Send }) {
             </li>
           ))}
       </ul>
+      {(hand === null || hand.street === 'complete') && (
+        <button type="button" onClick={() => host({ type: 'add-bot' })}>
+          Add Bot
+        </button>
+      )}
       <Confirmed
         label="End Game"
         question="End the Game for everyone and show the Standings?"

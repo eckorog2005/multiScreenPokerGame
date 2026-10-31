@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import {
   act,
+  addBot,
   claimHost,
   createGame,
   dealHand,
@@ -439,5 +440,30 @@ describe('Standings', () => {
       ['b', -5],
       ['c', 5],
     ]);
+  });
+});
+
+describe('Bots', () => {
+  test('a Bot takes the lowest free Seat with a unique name, and only the Host adds one', () => {
+    let game = ok(addBot(tableOf('a', 'b'), 'a', 'bot1'));
+    game = ok(addBot(game, 'a', 'bot2'));
+    expect(game.players.filter((p) => p.bot).map((p) => [p.seat, p.name])).toEqual([
+      [3, 'Bot Ada'],
+      [4, 'Bot Ben'],
+    ]);
+    expect(errorOf(addBot(tableOf('a', 'b'), 'b', 'bot1'))).toBe('not-host');
+  });
+
+  test('a Bot cannot be added mid-Hand or into a full table', () => {
+    expect(errorOf(addBot(deal(tableOf('a', 'b')), 'a', 'bot'))).toBe('hand-in-progress');
+    let game = tableOf('a');
+    for (let i = 0; i < 8; i++) game = ok(addBot(game, 'a', `bot${i}`));
+    expect(errorOf(addBot(game, 'a', 'one-more'))).toBe('table-full');
+  });
+
+  test('a Bot is never Host', () => {
+    const game = ok(addBot(tableOf('a', 'b'), 'a', 'bot'));
+    expect(errorOf(transferHost(game, 'a', 'bot'))).toBe('invalid-setting');
+    expect(ok(removePlayer(ok(addBot(tableOf('a'), 'a', 'bot')), 'a', 'a')).hostId).toBeNull();
   });
 });

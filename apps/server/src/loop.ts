@@ -1,4 +1,4 @@
-import { act, dealHand, isGameError, setSittingOut } from '@poker/engine';
+import { act, botAction, dealHand, isGameError, setSittingOut } from '@poker/engine';
 import type { GameError, GameState, Rng, ViewContext } from '@poker/engine';
 import type { Clock } from './clock.ts';
 import { hasConnectedScreen, type ServerGame } from './registry.ts';
@@ -6,6 +6,7 @@ import { hasConnectedScreen, type ServerGame } from './registry.ts';
 export const DEFAULT_AUTO_DEAL_DELAY_MS = 5_000;
 export const HOST_CLAIM_AFTER_MS = 60_000;
 export const IDLE_GAME_MS = 30 * 60_000;
+export const BOT_ACT_DELAY_MS = 1_500;
 
 export type LoopOptions = {
   readonly clock: Clock;
@@ -21,7 +22,8 @@ export type LoopOptions = {
 export type Loop = ReturnType<typeof createLoop>;
 
 export function isConnected(game: ServerGame) {
-  return (playerId: string) => game.players.get(playerId)?.screen != null;
+  return (playerId: string) =>
+    game.players.get(playerId)?.screen != null || game.state.players.some((p) => p.id === playerId && p.bot);
 }
 
 export function createLoop({ clock, autoDealDelayMs, rng, publish, discard }: LoopOptions) {
@@ -51,6 +53,14 @@ export function createLoop({ clock, autoDealDelayMs, rng, publish, discard }: Lo
     changed(game);
   };
 
+  const botAct = (game: ServerGame) => {
+    const { hand } = game.state;
+    if (!hand?.toAct) return;
+    const next = act(game.state, hand.toAct, botAction(hand, hand.toAct));
+    if (!isGameError(next)) game.state = next;
+    changed(game);
+  };
+
   const autoDeal = (game: ServerGame) => {
     const next = deal(game);
     if (!isGameError(next)) game.state = next;
@@ -62,7 +72,7 @@ export function createLoop({ clock, autoDealDelayMs, rng, publish, discard }: Lo
     if (game.ended || game.paused || state.handsDealt === 0 || state.hand?.street !== 'complete') return false;
     const connected = isConnected(game);
     const eligible = state.players.filter((p) => p.seat !== null && p.chips > 0 && !p.sittingOut && connected(p.id));
-    return eligible.length >= 2;
+    return eligible.length >= 2 && eligible.some((p) => !p.bot);
   };
 
   /** Re-arms the Game's timers for its current state, then publishes it. Call after every change. */
@@ -70,7 +80,26 @@ export function createLoop({ clock, autoDealDelayMs, rng, publish, discard }: Lo
     const { state, timers } = game;
     const hand = state.hand;
 
-    if (!game.ended && hand && hand.street !== 'complete' && hand.toAct !== null && state.turnTimerSeconds !== null) {
+    const actingBot =
+      !game.ended &&
+      hand?.street !== 'complete' &&
+      hand?.toAct != null &&
+      state.players.some((p) => p.id === hand.toAct && p.bot);
+
+    if (actingBot) {
+      timers.bot.set(hand, BOT_ACT_DELAY_MS, () => botAct(game));
+    } else {
+      timers.bot.clear();
+    }
+
+    if (
+      !game.ended &&
+      !actingBot &&
+      hand &&
+      hand.street !== 'complete' &&
+      hand.toAct !== null &&
+      state.turnTimerSeconds !== null
+    ) {
       timers.turn.set(hand, state.turnTimerSeconds * 1000, () => timeOut(game));
     } else {
       timers.turn.clear();

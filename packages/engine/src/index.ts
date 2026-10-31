@@ -4,6 +4,7 @@ export { cryptoRng, shuffle } from './shuffle.ts';
 export type { Rng } from './shuffle.ts';
 export { compareHands, evaluateHand } from './evaluate.ts';
 export type { HandCategory, HandValue } from './evaluate.ts';
+export { botAction } from './bot.ts';
 export { applyAction, foldPlayer, isRuleError, startHand } from './hand.ts';
 export type {
   Action,
@@ -24,6 +25,7 @@ export {
   DEFAULT_STARTING_STACK,
   MAX_SEATS,
   act,
+  addBot,
   claimHost,
   createGame,
   dealHand,

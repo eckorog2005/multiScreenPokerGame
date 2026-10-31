@@ -141,6 +141,7 @@ function Seat({ seat, hand }: { seat: SeatView; hand: HandView | null }) {
       <p className="seat-name">
         {seat.name}
         {seat.isHost && <span className="badge">Host</span>}
+        {seat.bot && <span className="badge">Bot</span>}
         {seat.isButton && <Marker label="Button" text="D" />}
         {seat.blind === 'small' && <Marker label="Small blind" text="SB" />}
         {seat.blind === 'big' && <Marker label="Big blind" text="BB" />}

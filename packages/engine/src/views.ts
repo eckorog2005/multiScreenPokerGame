@@ -99,6 +99,7 @@ function seatViews(game: GameState, isConnected: IsConnected): SeatView[] {
         chips: chipsOf(game, p, inHand),
         bet: inHand?.bet ?? 0,
         isHost: game.hostId === p.id,
+        bot: p.bot === true,
         isButton: game.button === p.seat,
         blind: blindOf(game.hand, p.seat),
         sittingOut: p.sittingOut,

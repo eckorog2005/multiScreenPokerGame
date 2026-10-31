@@ -318,6 +318,15 @@ test('the Host removes a Player only after confirming', async () => {
   expect(hostCommands(send)).toEqual([{ type: 'remove-player', playerId: 'p1' }]);
 });
 
+test('the Host adds a Bot between Hands', async () => {
+  const user = userEvent.setup();
+  const { send } = renderSeated(hostView());
+
+  await user.click(screen.getByRole('button', { name: 'Add Bot' }));
+
+  expect(hostCommands(send)).toEqual([{ type: 'add-bot' }]);
+});
+
 test('the Host hands the role to another Player', async () => {
   const user = userEvent.setup();
   const { send } = renderSeated(hostView());

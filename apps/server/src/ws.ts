@@ -3,6 +3,7 @@ import fastifyWebsocket from '@fastify/websocket';
 import { randomUUID } from 'node:crypto';
 import {
   act,
+  addBot,
   claimHost,
   foldFor,
   isGameError,
@@ -172,6 +173,7 @@ function hostCommand(game: ServerGame, playerId: string, command: HostCommand, l
     removed?.screen?.close();
     return next;
   }
+  if (command?.type === 'add-bot') return addBot(game.state, playerId, randomUUID());
   if (command?.type === 'fold-for') {
     const toAct = game.state.hand?.toAct;
     if (toAct && game.state.hostId === playerId && isConnected(game)(toAct)) {

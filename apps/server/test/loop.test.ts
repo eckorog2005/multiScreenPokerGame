@@ -1,12 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { connect } from './ws-client.ts';
+import { connect, type TestClient } from './ws-client.ts';
+import type { FakeClock } from './fake-clock.ts';
 import {
   complete,
   dealt,
   foldOut,
   game,
   playerViewWhere,
+  type Seated,
   settle,
   start,
   tableViews,
@@ -201,4 +203,57 @@ test('a Game with no connected screens for 30 minutes is discarded', async (t) =
   assert.equal(await exists(), true);
   clock.advance(1);
   assert.equal(await exists(), false);
+});
+
+async function humanVsBot(t: Parameters<typeof start>[0]) {
+  const { url, clock } = await start(t);
+  const { table, players } = await game(url, 'Ann');
+  const [ann] = players;
+  ann!.client.send({ type: 'host', command: { type: 'add-bot' } });
+  await tableViewWhere(table, (v) => v.seats.some((s) => s.bot));
+  ann!.client.send({ type: 'host', command: { type: 'deal-hand' } });
+  return { table, clock, ann: ann! };
+}
+
+test('a Bot acts 1.5 seconds after its turn comes', async (t) => {
+  const { table, clock, ann } = await humanVsBot(t);
+  let view = await tableViewWhere(table, dealt);
+  if (view.hand!.toAct === ann.playerId) {
+    ann.client.send({ type: 'action', action: { type: 'call' } });
+    view = await tableViewWhere(table, (v) => v.hand!.toAct !== ann.playerId);
+  }
+  clock.advance(1_499);
+  assert.deepEqual(tableViews(await settle(table)), []);
+  clock.advance(1);
+  await tableViewWhere(table, (v) => v.hand!.toAct !== view.hand!.toAct || complete(v));
+});
+
+async function playOut(table: TestClient, clock: FakeClock, ann: Seated) {
+  for (let view = await tableViewWhere(table, dealt); !complete(view);) {
+    if (view.hand!.toAct === ann.playerId) {
+      ann.client.send({ type: 'action', action: { type: 'fold' } });
+    } else {
+      clock.advance(1_500);
+    }
+    view = await tableViewWhere(table, () => true);
+  }
+}
+
+test('a Game with one human and one Bot keeps dealing', async (t) => {
+  const { table, clock, ann } = await humanVsBot(t);
+  await playOut(table, clock, ann);
+  clock.advance(5_000);
+  await tableViewWhere(table, dealt);
+});
+
+test('auto-deal waits when no human is connected', async (t) => {
+  const { table, clock, ann } = await humanVsBot(t);
+  await playOut(table, clock, ann);
+  await ann.client.close();
+  await tableViewWhere(table, (v) => !v.seats.find((s) => s.playerId === ann.playerId)!.connected);
+  clock.advance(60_000);
+  assert.deepEqual(
+    tableViews(await settle(table)).filter((m) => dealt(m.view)),
+    [],
+  );
 });
