@@ -31,8 +31,12 @@ _Avoid_: Client, controller, hand (for the device)
 ### People
 
 **Player**:
-A person in a Game, identified by their Player Device and a display name; leaving frees their Seat but keeps the Player and their Chips in the Game until they return.
+A person or Bot in a Game, with a display name; a person is identified by their Player Device. Leaving frees a person's Seat but keeps the Player and their Chips in the Game until they return.
 _Avoid_: User, account
+
+**Bot**:
+A Player controlled by the server instead of a person, so it has no Player Device. The Host adds and removes Bots; a Bot is never the Host and is never Sitting Out.
+_Avoid_: AI, computer player, CPU, NPC
 
 **Host**:
 The Player with admin controls (game settings, starting play, removing Players); initially the first Player to join, and transferable.
