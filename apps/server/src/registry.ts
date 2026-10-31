@@ -16,6 +16,7 @@ export type ServerPlayer = {
 export type GameTimers = {
   readonly turn: Timer;
   readonly deal: Timer;
+  readonly bot: Timer;
   readonly hostClaim: Timer;
   readonly cleanup: Timer;
 };
@@ -48,6 +49,7 @@ export class Registry {
     const timers: GameTimers = {
       turn: new Timer(this.#clock),
       deal: new Timer(this.#clock),
+      bot: new Timer(this.#clock),
       hostClaim: new Timer(this.#clock),
       cleanup: new Timer(this.#clock),
     };
