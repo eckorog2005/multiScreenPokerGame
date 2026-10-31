@@ -1,10 +1,45 @@
 :root {
-  font-family: system-ui, sans-serif;
+  --bg: #f3eee0;
+  --ink: #1f1b14;
+  --panel: #fffdf6;
+  --felt: #3d6b53;
+  --rim: #1f1b14;
+  --gold: #f2c14e;
+  --card: #fbfaf5;
+  --suit-red: #b91c1c;
+  --suit-black: #1a1a1a;
+  font-family: Georgia, 'Times New Roman', serif;
   color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1a15;
+    --ink: #f3eee0;
+    --panel: #2a261d;
+    --felt: #24493a;
+    --rim: #0f0d09;
+  }
 }
 
 body {
   margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+button {
+  min-height: 44px;
+  border: 3px solid var(--ink);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+  font-weight: bold;
+}
+
+button:disabled {
+  opacity: 0.5;
 }
 
 main {
@@ -73,7 +108,7 @@ label input {
   inset: 0;
   z-index: 1;
   overflow-y: auto;
-  background: color-mix(in srgb, gold 25%, Canvas);
+  background: color-mix(in srgb, var(--gold) 25%, var(--bg));
 }
 
 .your-turn {
@@ -92,7 +127,7 @@ label input {
 .banner {
   margin: -16px -16px 0;
   padding: 8px 16px;
-  background: orange;
+  background: var(--gold);
   color: black;
   text-align: center;
 }
@@ -111,29 +146,39 @@ label input {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-direction: column;
   width: 4.5rem;
   height: 6.3rem;
   margin-right: 8px;
-  border: 1px solid currentColor;
   border-radius: 8px;
-  background: white;
-  color: black;
-  font-size: 1.75rem;
+  background: var(--card);
+  color: var(--suit-black);
+  font-size: 2rem;
+  font-weight: bold;
+  line-height: 1;
 }
 
 .card.small {
   width: 2.4rem;
   height: 3.3rem;
   margin-right: 4px;
-  font-size: 1rem;
+  font-size: 1.1rem;
 }
 
 .card.red {
-  color: #c00;
+  color: var(--suit-red);
 }
 
 .card.back {
-  background: repeating-linear-gradient(45deg, #24508f 0 6px, #2f66b3 6px 12px);
+  box-sizing: border-box;
+  border: 6px solid var(--card);
+  background: repeating-linear-gradient(45deg, #7a1f2b 0 10px, #5e1620 10px 20px);
+}
+
+.hole-cards .card {
+  width: 7.5rem;
+  height: 10.5rem;
+  font-size: 3.5rem;
 }
 
 .hole-cards {
@@ -170,7 +215,7 @@ label input {
 
 .presets button {
   flex: 1;
-  min-height: 40px;
+  min-height: 44px;
 }
 
 .slider {
@@ -185,7 +230,7 @@ label input {
 
 .slider button {
   min-width: 48px;
-  min-height: 40px;
+  min-height: 44px;
   font-size: 1.25rem;
 }
 
@@ -275,10 +320,11 @@ label input {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  border: 12px solid #5a3a1e;
+  border: 14px solid var(--rim);
   border-radius: 50%;
-  background: #1d6b3a;
-  color: white;
+  background: var(--felt);
+  box-shadow: inset 0 0 0 20px var(--felt), inset 0 0 0 22px color-mix(in srgb, white 25%, var(--felt));
+  color: #f6f1e1;
   text-align: center;
 }
 
@@ -324,9 +370,10 @@ label input {
   width: 11em;
   padding: 8px;
   transform: translate(-50%, -50%);
-  border: 2px solid currentColor;
-  border-radius: 12px;
-  background: Canvas;
+  border: 3px solid var(--ink);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
   text-align: center;
 }
 
@@ -335,8 +382,10 @@ label input {
 }
 
 .seats li.to-act {
-  border-color: gold;
-  box-shadow: 0 0 0 4px gold;
+  border-color: var(--ink);
+  background: var(--gold);
+  color: #1f1b14;
+  box-shadow: 0 0 0 4px var(--gold);
 }
 
 .seat-name {
