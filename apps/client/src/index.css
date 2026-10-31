@@ -172,7 +172,7 @@ label input {
 .card.back {
   box-sizing: border-box;
   border: 6px solid var(--card);
-  background: repeating-linear-gradient(45deg, #7a1f2b 0 10px, #5e1620 10px 20px);
+  background: repeating-linear-gradient(90deg, #0f5c5c 0 14px, #0b4444 14px 28px);
 }
 
 .hole-cards .card {
