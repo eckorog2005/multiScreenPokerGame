@@ -122,3 +122,20 @@ test('an ended Game refuses play and joins but can still be watched', async (t) 
   watcher.send({ type: 'open-table', code });
   assert.equal((await watcher.nextOfType('table-view')).view.ended, true);
 });
+
+test('the Host adds a Bot, who shows on the Table, and removes it', async (t) => {
+  const { url } = await start(t);
+  const { table, players } = await game(url, 'Ann', 'Bob');
+  const [ann, bob] = players;
+
+  bob!.client.send({ type: 'host', command: { type: 'add-bot' } });
+  assert.equal((await bob!.client.nextOfType('error')).error, 'not-host');
+
+  ann!.client.send({ type: 'host', command: { type: 'add-bot' } });
+  const view = await tableViewWhere(table, (v) => v.seats.some((s) => s.bot));
+  const bot = view.seats.find((s) => s.bot)!;
+  assert.deepEqual([bot.seat, bot.name, bot.connected, bot.isHost], [3, 'Bot Ada', true, false]);
+
+  ann!.client.send({ type: 'host', command: { type: 'remove-player', playerId: bot.playerId } });
+  await tableViewWhere(table, (v) => v.seats.every((s) => !s.bot));
+});

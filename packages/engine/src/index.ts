@@ -24,6 +24,7 @@ export {
   DEFAULT_STARTING_STACK,
   MAX_SEATS,
   act,
+  addBot,
   claimHost,
   createGame,
   dealHand,
