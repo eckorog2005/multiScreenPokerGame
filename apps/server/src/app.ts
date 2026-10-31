@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import Fastify, { type FastifyServerOptions } from 'fastify';
 import fastifyStatic from '@fastify/static';
+import type { Rng } from '@poker/engine';
 import type { ErrorCode, GameSeatsResponse } from '@poker/protocol';
 import { systemClock, type Clock } from './clock.ts';
 import { DEFAULT_AUTO_DEAL_DELAY_MS } from './loop.ts';
@@ -10,10 +11,10 @@ import { registerRealtime } from './ws.ts';
 
 const clientDir = fileURLToPath(new URL('../../client/dist', import.meta.url));
 
-export type GameOptions = { clock?: Clock; autoDealDelayMs?: number };
+export type GameOptions = { clock?: Clock; autoDealDelayMs?: number; rng?: Rng };
 
 export function buildApp(opts: FastifyServerOptions = {}, game: GameOptions = {}) {
-  const { clock = systemClock, autoDealDelayMs = DEFAULT_AUTO_DEAL_DELAY_MS } = game;
+  const { clock = systemClock, autoDealDelayMs = DEFAULT_AUTO_DEAL_DELAY_MS, rng } = game;
   const app = Fastify(opts);
 
   // dist is absent until the client is built; the API and /ws must still start (pnpm dev).
@@ -37,7 +38,7 @@ export function buildApp(opts: FastifyServerOptions = {}, game: GameOptions = {}
     return { code: game.code, seats } satisfies GameSeatsResponse;
   });
 
-  app.register(registerRealtime, { registry, clock, autoDealDelayMs });
+  app.register(registerRealtime, { registry, clock, autoDealDelayMs, rng });
 
   return app;
 }
