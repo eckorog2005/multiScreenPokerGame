@@ -7,7 +7,10 @@ async function holeCards(page: Page): Promise<string> {
   const box = (await cards.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
-  const text = (await cards.innerText()).replace(/\s+/g, ' ').trim();
+  const text = (await cards.innerText())
+    .replace(/\s+([♠♥♦♣])/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim();
   await page.mouse.up();
   return text;
 }

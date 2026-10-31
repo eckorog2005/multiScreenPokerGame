@@ -323,7 +323,9 @@ label input {
   border: 14px solid var(--rim);
   border-radius: 50%;
   background: var(--felt);
-  box-shadow: inset 0 0 0 20px var(--felt), inset 0 0 0 22px color-mix(in srgb, white 25%, var(--felt));
+  box-shadow:
+    inset 0 0 0 20px var(--felt),
+    inset 0 0 0 22px color-mix(in srgb, white 25%, var(--felt));
   color: #f6f1e1;
   text-align: center;
 }
