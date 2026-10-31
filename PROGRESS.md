@@ -21,7 +21,7 @@ The engine (rules, Game, views) and the WebSocket server (create, join, resume, 
 - [x] 2026-10-12: Ported the server to Node.js + Fastify 5 (ESM, Node >= 22).
   - `src/app.js` builds the app (`buildApp()`), so tests can use `app.inject()` without opening a port.
   - `src/server.js` starts it on `PORT` (default `9090`) and `HOST` (default `0.0.0.0`).
-  - `@fastify/static` serves `public/` under `/static/`.
+  - `@fastify/static` serves the built client (`apps/client/dist`) at `/`, with SPA fallback.
   - Tests use the built-in `node:test` runner.
 - [x] 2026-10-12: Merged into a monorepo.
   - Server moved to `apps/server`; npm lockfile replaced by a root `pnpm-lock.yaml`.
@@ -117,7 +117,7 @@ The v1 plan is now specified in `.scratch/holdem-v1/` (`spec.md`, plus one issue
 - [ ] Table view: community cards, pot, seats, chip stacks, whose turn it is.
 - [ ] Player view (mobile first): hole cards, chip stack, fold / check / call / raise with a bet slider.
 - [ ] Reconnects: a player who drops can rejoin their seat.
-- [ ] Serve the built client from Fastify (`apps/client/dist`) so production is one process on one origin.
+- [x] Serve the built client from Fastify (`apps/client/dist`) so production is one process on one origin.
 - [ ] Card art and styling that works on a TV/laptop for the table and a phone for players.
 - [ ] Playwright end-to-end test: one table and two phones in separate browser contexts.
 - [x] Formatting; CI to run lint, tests and build.
@@ -142,7 +142,14 @@ pnpm format  # Prettier, writes changes
 pnpm check   # what CI runs: format check, lint, build, test
 ```
 
-Then open http://localhost:5173 for the client (or http://localhost:9090 for the server directly).
+Then open http://localhost:5173 for the client.
+
+In production it is one process on one origin:
+
+```sh
+pnpm build
+pnpm --filter server start   # serves the client, /api and /ws on :9090 (PORT, HOST)
+```
 
 To join from a phone in development, put the phone on the same Wi-Fi as your machine. The Vite dev server listens on all interfaces, and when the Table runs on `localhost` the QR link uses your machine's first non-internal IPv4 address instead (e.g. `http://192.168.1.20:5173/play?code=ABCD`). If it picks the wrong interface, set it yourself: `LAN_HOST=192.168.1.20 pnpm dev`. Your firewall must allow incoming connections on port 5173.
 
