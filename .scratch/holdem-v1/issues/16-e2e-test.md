@@ -1,6 +1,6 @@
 # 16: End-to-end test with one Table and two phones
 
-Status: ready-for-agent
+Status: resolved
 Blocked by: 12, 13, 14
 
 ## What

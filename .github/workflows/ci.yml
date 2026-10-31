@@ -46,3 +46,17 @@ jobs:
         run: pnpm build
       - name: Test
         run: pnpm test
+
+  e2e:
+    name: End-to-end
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          node-version: 26
+      - name: Install browser
+        run: pnpm exec playwright install --with-deps chromium
+      - name: End-to-end test
+        run: pnpm test:e2e

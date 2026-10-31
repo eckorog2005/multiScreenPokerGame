@@ -1,5 +1,5 @@
 import { act, botAction, dealHand, isGameError, setSittingOut } from '@poker/engine';
-import type { GameError, GameState, ViewContext } from '@poker/engine';
+import type { GameError, GameState, Rng, ViewContext } from '@poker/engine';
 import type { Clock } from './clock.ts';
 import { hasConnectedScreen, type ServerGame } from './registry.ts';
 
@@ -11,6 +11,8 @@ export const BOT_ACT_DELAY_MS = 1_500;
 export type LoopOptions = {
   readonly clock: Clock;
   readonly autoDealDelayMs: number;
+  /** Shuffles and button draws; unset uses the engine's cryptographic default. */
+  readonly rng?: Rng;
   /** Sends fresh views to every screen of the Game. */
   readonly publish: (game: ServerGame) => void;
   /** The Game had no connected screens for `IDLE_GAME_MS`. */
@@ -24,7 +26,7 @@ export function isConnected(game: ServerGame) {
     game.players.get(playerId)?.screen != null || game.state.players.some((p) => p.id === playerId && p.bot);
 }
 
-export function createLoop({ clock, autoDealDelayMs, publish, discard }: LoopOptions) {
+export function createLoop({ clock, autoDealDelayMs, rng, publish, discard }: LoopOptions) {
   const hostClaimable = (game: ServerGame): boolean => {
     const host = game.state.hostId === null ? undefined : game.players.get(game.state.hostId);
     if (!host || host.screen !== null || host.disconnectedAt === null) return false;
@@ -40,7 +42,7 @@ export function createLoop({ clock, autoDealDelayMs, publish, discard }: LoopOpt
       const next = setSittingOut(state, player.id, true);
       if (!isGameError(next)) state = next;
     }
-    return dealHand(state, by === undefined ? {} : { by });
+    return dealHand(state, { ...(by === undefined ? {} : { by }), ...(rng && { rng }) });
   };
 
   const timeOut = (game: ServerGame) => {

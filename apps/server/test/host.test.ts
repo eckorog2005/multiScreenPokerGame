@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { connect } from './ws-client.ts';
+import { buildApp } from '../src/app.ts';
+import { connect, listen } from './ws-client.ts';
 import { dealt, foldOut, game, playerViewWhere, settle, start, tableViews, tableViewWhere } from './helpers.ts';
 
 test('before the first Hand the Host sets the starting stack, blinds and turn timer, then deals', async (t) => {
@@ -138,4 +139,16 @@ test('the Host adds a Bot, who shows on the Table, and removes it', async (t) =>
 
   ann!.client.send({ type: 'host', command: { type: 'remove-player', playerId: bot.playerId } });
   await tableViewWhere(table, (v) => v.seats.every((s) => !s.bot));
+});
+
+test('a seeded rng makes the deal reproducible', async (t) => {
+  const { seededRng } = await import('../src/seeded-rng.ts');
+  const holeCards = async () => {
+    const app = buildApp({}, { rng: seededRng(7) });
+    t.after(() => app.close());
+    const { players } = await game(await listen(app), 'Ann', 'Bob');
+    players[0]!.client.send({ type: 'host', command: { type: 'deal-hand' } });
+    return (await playerViewWhere(players[0]!.client, (v) => v.you.holeCards !== null)).you.holeCards;
+  };
+  assert.deepEqual(await holeCards(), await holeCards());
 });

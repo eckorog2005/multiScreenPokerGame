@@ -1,25 +1,33 @@
+import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import Fastify, { type FastifyServerOptions } from 'fastify';
 import fastifyStatic from '@fastify/static';
+import type { Rng } from '@poker/engine';
 import type { ErrorCode, GameSeatsResponse } from '@poker/protocol';
 import { systemClock, type Clock } from './clock.ts';
 import { DEFAULT_AUTO_DEAL_DELAY_MS } from './loop.ts';
 import { Registry } from './registry.ts';
 import { registerRealtime } from './ws.ts';
 
-const publicDir = fileURLToPath(new URL('../public', import.meta.url));
+const clientDir = fileURLToPath(new URL('../../client/dist', import.meta.url));
 
-export type GameOptions = { clock?: Clock; autoDealDelayMs?: number };
+export type GameOptions = { clock?: Clock; autoDealDelayMs?: number; rng?: Rng };
 
 export function buildApp(opts: FastifyServerOptions = {}, game: GameOptions = {}) {
-  const { clock = systemClock, autoDealDelayMs = DEFAULT_AUTO_DEAL_DELAY_MS } = game;
+  const { clock = systemClock, autoDealDelayMs = DEFAULT_AUTO_DEAL_DELAY_MS, rng } = game;
   const app = Fastify(opts);
 
-  app.register(fastifyStatic, { root: publicDir, prefix: '/static/' });
+  // dist is absent until the client is built; the API and /ws must still start (pnpm dev).
+  if (existsSync(clientDir)) {
+    app.register(fastifyStatic, { root: clientDir });
 
-  app.get('/', (_request, reply) => reply.sendFile('index.html'));
-
-  app.get('/hello', async () => 'hello');
+    app.setNotFoundHandler((request, reply) => {
+      const path = request.url.split('?')[0]!;
+      const isClientRoute =
+        request.method === 'GET' && !path.startsWith('/api') && path !== '/ws' && !path.includes('.');
+      return isClientRoute ? reply.sendFile('index.html') : reply.code(404).send({ error: 'not-found' });
+    });
+  }
 
   const registry = new Registry(clock);
 
@@ -30,7 +38,7 @@ export function buildApp(opts: FastifyServerOptions = {}, game: GameOptions = {}
     return { code: game.code, seats } satisfies GameSeatsResponse;
   });
 
-  app.register(registerRealtime, { registry, clock, autoDealDelayMs });
+  app.register(registerRealtime, { registry, clock, autoDealDelayMs, rng });
 
   return app;
 }
