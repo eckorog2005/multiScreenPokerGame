@@ -53,6 +53,13 @@ test('a Table and two phones play a Hand through to Showdown', async ({ browser 
     }
   };
 
+  const handState = async () =>
+    [
+      await table.evaluate(() => document.querySelector('[aria-current]')?.getAttribute('aria-label')),
+      await table.getByRole('region', { name: 'Board' }).innerText(),
+      await table.getByRole('list', { name: 'Pots' }).innerText(),
+    ].join('|');
+
   let reloaded = false;
   for (let step = 0; step < 20; step++) {
     if (await table.getByRole('list', { name: 'Pots' }).getByText(/wins/).first().isVisible()) break;
@@ -73,7 +80,9 @@ test('a Table and two phones play a Hand through to Showdown', async ({ browser 
       expect(await holeCards(bob)).toBe(bobCards);
       await expect(bob.getByRole('heading', { name: 'Your turn' })).toBeVisible();
     }
+    const before = await handState();
     await actor.getByRole('button', { name: /^(Check|Call)/ }).click();
+    await expect.poll(handState).not.toBe(before);
   }
 
   expect(reloaded).toBe(true);
