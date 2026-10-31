@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import {
   act,
+  addBot,
   claimHost,
   createGame,
   dealHand,
@@ -9,6 +10,7 @@ import {
   join,
   leave,
   rebuy,
+  removeBot,
   removePlayer,
   setBlinds,
   setSittingOut,
@@ -439,5 +441,39 @@ describe('Standings', () => {
       ['b', -5],
       ['c', 5],
     ]);
+  });
+});
+
+describe('Bots', () => {
+  test('a Bot takes the lowest free Seat with a unique name', () => {
+    let game = tableOf('ann', 'bob');
+    game = ok(leave(game, 'ann'));
+    game = ok(join(game, { playerId: 'cat', name: 'Bot Ada', seat: 5 }));
+    game = ok(addBot(game, 'bob', 'b1'));
+    const bot = game.players.find((p) => p.id === 'b1')!;
+    expect([bot.seat, bot.name, bot.bot]).toEqual([1, 'Bot Ben', true]);
+  });
+
+  test('only the Host adds and removes Bots, between Hands', () => {
+    const game = tableOf('ann', 'bob');
+    expect(errorOf(addBot(game, 'bob', 'b1'))).toBe('not-host');
+    const withBot = ok(addBot(game, 'ann', 'b1'));
+    expect(errorOf(removeBot(withBot, 'bob', 'b1'))).toBe('not-host');
+    expect(errorOf(removeBot(withBot, 'ann', 'bob'))).toBe('unknown-player');
+    expect(errorOf(addBot(deal(withBot), 'ann', 'b2'))).toBe('hand-in-progress');
+    expect(removeBot(withBot, 'ann', 'b1')).toEqual(game);
+  });
+
+  test('adding a Bot with no free Seat fails', () => {
+    let game = createGame();
+    for (let i = 1; i <= 9; i++) game = ok(join(game, { playerId: `p${i}`, name: `p${i}`, seat: i }));
+    expect(errorOf(addBot(game, 'p1', 'b1'))).toBe('seat-taken');
+  });
+
+  test('a Bot is never Host', () => {
+    let game = ok(addBot(tableOf('ann', 'bob'), 'ann', 'b1'));
+    expect(errorOf(transferHost(game, 'ann', 'b1'))).toBe('invalid-setting');
+    game = ok(removePlayer(ok(leave(game, 'bob')), 'ann', 'ann'));
+    expect(game.hostId).toBeNull();
   });
 });

@@ -135,3 +135,21 @@ test('a seeded rng makes the deal reproducible', async (t) => {
   };
   assert.deepEqual(await holeCards(), await holeCards());
 });
+
+test('the Host adds a Bot to the Table and removes it; others cannot', async (t) => {
+  const { url } = await start(t);
+  const { table, players } = await game(url, 'Ann', 'Bob');
+  const [ann, bob] = players;
+
+  bob!.client.send({ type: 'host', command: { type: 'add-bot' } });
+  assert.equal((await bob!.client.nextOfType('error')).error, 'not-host');
+
+  ann!.client.send({ type: 'host', command: { type: 'add-bot' } });
+  const added = await tableViewWhere(table, (v) => v.seats.length === 3);
+  const bot = added.seats.find((s) => s.isBot)!;
+  assert.deepEqual([bot.seat, bot.name], [3, 'Bot Ada']);
+  assert.equal(bot.revealedCards, null);
+
+  ann!.client.send({ type: 'host', command: { type: 'remove-bot', playerId: bot.playerId } });
+  await tableViewWhere(table, (v) => v.seats.length === 2);
+});

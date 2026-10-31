@@ -47,6 +47,8 @@ export type HostCommand =
   | { readonly type: 'set-turn-timer'; readonly seconds: number | null }
   | { readonly type: 'set-paused'; readonly paused: boolean }
   | { readonly type: 'remove-player'; readonly playerId: string }
+  | { readonly type: 'add-bot' }
+  | { readonly type: 'remove-bot'; readonly playerId: string }
   | { readonly type: 'fold-for' }
   | { readonly type: 'transfer-host'; readonly playerId: string }
   | { readonly type: 'end-game' };
@@ -72,6 +74,7 @@ export type SeatView = {
   readonly chips: number;
   readonly bet: number;
   readonly isHost: boolean;
+  readonly isBot: boolean;
   readonly isButton: boolean;
   /** Which blind the Seat posted in the current or last Hand. */
   readonly blind: 'small' | 'big' | null;

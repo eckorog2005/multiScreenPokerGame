@@ -18,6 +18,8 @@ export type GamePlayer = {
   readonly chips: number;
   readonly sittingOut: boolean;
   readonly rebuys: number;
+  /** Run by the server; never the Host. */
+  readonly bot: boolean;
 };
 
 export type StandingsRow = {
@@ -99,8 +101,40 @@ export function join(game: GameState, input: JoinInput): GameState | GameError {
   if (game.players.some((p) => p.name.toLowerCase() === name.toLowerCase())) {
     return fail('name-taken', `${name} is already taken`);
   }
-  const player: GamePlayer = { id: playerId, name, seat, chips: game.startingStack, sittingOut: false, rebuys: 0 };
+  const player: GamePlayer = {
+    id: playerId,
+    name,
+    seat,
+    chips: game.startingStack,
+    sittingOut: false,
+    rebuys: 0,
+    bot: false,
+  };
   return { ...game, players: [...game.players, player], hostId: game.hostId ?? playerId };
+}
+
+const BOT_NAMES = ['Ada', 'Ben', 'Cal', 'Dee', 'Eli', 'Fay', 'Gus', 'Hal', 'Ivy'];
+
+export function addBot(game: GameState, actorId: string, botId: string): GameState | GameError {
+  const denied = requireHost(game, actorId);
+  if (denied) return denied;
+  if (handActive(game)) return fail('hand-in-progress', 'Bots can only be added between Hands');
+  const seat = Array.from({ length: MAX_SEATS }, (_, i) => i + 1).find((s) => !game.players.some((p) => p.seat === s));
+  if (seat === undefined) return fail('seat-taken', 'No Seat is free');
+  const taken = new Set(game.players.map((p) => p.name.toLowerCase()));
+  const name = [...BOT_NAMES, ...Array.from({ length: game.players.length + 1 }, (_, i) => String(i + 1))]
+    .map((n) => `Bot ${n}`)
+    .find((n) => !taken.has(n.toLowerCase()))!;
+  const bot: GamePlayer = { id: botId, name, seat, chips: game.startingStack, sittingOut: false, rebuys: 0, bot: true };
+  return { ...game, players: [...game.players, bot] };
+}
+
+export function removeBot(game: GameState, actorId: string, botId: string): GameState | GameError {
+  const denied = requireHost(game, actorId);
+  if (denied) return denied;
+  if (!findPlayer(game, botId)?.bot) return unknownPlayer(botId);
+  if (handActive(game)) return fail('hand-in-progress', 'Bots can only be removed between Hands');
+  return { ...game, players: game.players.filter((p) => p.id !== botId) };
 }
 
 export function takeSeat(game: GameState, playerId: string, seat: number): GameState | GameError {
@@ -177,6 +211,7 @@ export function transferHost(game: GameState, actorId: string, targetId: string)
   const target = findPlayer(game, targetId);
   if (!target) return unknownPlayer(targetId);
   if (target.seat === null) return fail('not-seated', `${target.name} has no Seat`);
+  if (target.bot) return fail('invalid-setting', 'A Bot cannot be Host');
   return { ...game, hostId: targetId };
 }
 
@@ -325,7 +360,7 @@ function nextHost(
 ): string | null {
   if (game.hostId !== leavingId) return game.hostId;
   const others = players
-    .filter((p): p is GamePlayer & { seat: number } => p.id !== leavingId && p.seat !== null)
+    .filter((p): p is GamePlayer & { seat: number } => p.id !== leavingId && p.seat !== null && !p.bot)
     .sort((a, b) => a.seat - b.seat);
   const next = others.find((p) => p.seat > (leavingSeat ?? 0)) ?? others[0];
   return next?.id ?? null;

@@ -32,21 +32,36 @@ function HostControls({ view, send }: { view: PlayerView; send: Send }) {
           <BlindsForm view={view} host={host} />
         </>
       )}
+      {(hand === null || hand.street === 'complete') && (
+        <button type="button" onClick={() => host({ type: 'add-bot' })}>
+          Add Bot
+        </button>
+      )}
       <ul className="host-players" aria-label="Players">
         {view.seats
           .filter((s) => s.playerId !== you.playerId)
           .map((s) => (
             <li key={s.playerId}>
               {s.name}
-              <button type="button" onClick={() => host({ type: 'transfer-host', playerId: s.playerId })}>
-                Make {s.name} Host
-              </button>
-              <Confirmed
-                label={`Remove ${s.name}`}
-                question={`Remove ${s.name} from the Game? Their Chips leave with them.`}
-                confirm={`Yes, remove ${s.name}`}
-                onConfirm={() => host({ type: 'remove-player', playerId: s.playerId })}
-              />
+              {!s.isBot && (
+                <button type="button" onClick={() => host({ type: 'transfer-host', playerId: s.playerId })}>
+                  Make {s.name} Host
+                </button>
+              )}
+              {s.isBot ? (
+                (hand === null || hand.street === 'complete') && (
+                  <button type="button" onClick={() => host({ type: 'remove-bot', playerId: s.playerId })}>
+                    Remove {s.name}
+                  </button>
+                )
+              ) : (
+                <Confirmed
+                  label={`Remove ${s.name}`}
+                  question={`Remove ${s.name} from the Game? Their Chips leave with them.`}
+                  confirm={`Yes, remove ${s.name}`}
+                  onConfirm={() => host({ type: 'remove-player', playerId: s.playerId })}
+                />
+              )}
             </li>
           ))}
       </ul>

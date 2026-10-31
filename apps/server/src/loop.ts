@@ -21,7 +21,8 @@ export type LoopOptions = {
 export type Loop = ReturnType<typeof createLoop>;
 
 export function isConnected(game: ServerGame) {
-  return (playerId: string) => game.players.get(playerId)?.screen != null;
+  return (playerId: string) =>
+    game.players.get(playerId)?.screen != null || game.state.players.some((p) => p.id === playerId && p.bot);
 }
 
 export function createLoop({ clock, autoDealDelayMs, rng, publish, discard }: LoopOptions) {
