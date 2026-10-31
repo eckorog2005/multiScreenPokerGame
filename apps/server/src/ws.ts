@@ -19,20 +19,24 @@ import {
   takeSeat,
   transferHost,
 } from '@poker/engine';
-import type { GameState } from '@poker/engine';
+import type { GameState, Rng } from '@poker/engine';
 import type { ClientMessage, ErrorCode, HostCommand, ServerMessage } from '@poker/protocol';
 import type { Clock } from './clock.ts';
 import { createLoop, isConnected, type Loop } from './loop.ts';
 import type { Registry, Screen, ServerGame } from './registry.ts';
 
-export type RealtimeOptions = { registry: Registry; clock: Clock; autoDealDelayMs: number };
+export type RealtimeOptions = { registry: Registry; clock: Clock; autoDealDelayMs: number; rng?: Rng };
 
-export async function registerRealtime(app: FastifyInstance, { registry, clock, autoDealDelayMs }: RealtimeOptions) {
+export async function registerRealtime(
+  app: FastifyInstance,
+  { registry, clock, autoDealDelayMs, rng }: RealtimeOptions,
+) {
   await app.register(fastifyWebsocket);
 
   const loop = createLoop({
     clock,
     autoDealDelayMs,
+    rng,
     publish: (game) => broadcast(game, loop),
     discard: (game) => registry.discard(game),
   });

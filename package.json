@@ -11,7 +11,8 @@
     "lint": "pnpm --recursive run lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "pnpm format:check && pnpm lint && pnpm build && pnpm test"
+    "check": "pnpm format:check && pnpm lint && pnpm build && pnpm test",
+    "test:e2e": "playwright test"
   },
   "engines": {
     "node": ">=26"
@@ -19,6 +20,7 @@
   "author": "Roger Lamb",
   "license": "MIT",
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "prettier": "^3.9.10"
   }
 }

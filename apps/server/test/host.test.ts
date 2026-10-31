@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { connect } from './ws-client.ts';
+import { buildApp } from '../src/app.ts';
+import { connect, listen } from './ws-client.ts';
 import { dealt, foldOut, game, playerViewWhere, settle, start, tableViews, tableViewWhere } from './helpers.ts';
 
 test('before the first Hand the Host sets the starting stack, blinds and turn timer, then deals', async (t) => {
@@ -121,4 +122,16 @@ test('an ended Game refuses play and joins but can still be watched', async (t) 
   const watcher = await connect(url);
   watcher.send({ type: 'open-table', code });
   assert.equal((await watcher.nextOfType('table-view')).view.ended, true);
+});
+
+test('a seeded rng makes the deal reproducible', async (t) => {
+  const { seededRng } = await import('../src/seeded-rng.ts');
+  const holeCards = async () => {
+    const app = buildApp({}, { rng: seededRng(7) });
+    t.after(() => app.close());
+    const { players } = await game(await listen(app), 'Ann', 'Bob');
+    players[0]!.client.send({ type: 'host', command: { type: 'deal-hand' } });
+    return (await playerViewWhere(players[0]!.client, (v) => v.you.holeCards !== null)).you.holeCards;
+  };
+  assert.deepEqual(await holeCards(), await holeCards());
 });
