@@ -332,7 +332,7 @@ function withHand(game: GameState, hand: HandState): GameState {
     const inHand = hand.players.find((h) => h.id === p.id);
     return inHand ? { ...p, chips: inHand.stack } : p;
   });
-  return { ...game, hand, players };
+  return { ...game, hand, players: players.filter((p) => !(p.bot && p.chips === 0)) };
 }
 
 function nextHost(

@@ -444,6 +444,24 @@ describe('Standings', () => {
 });
 
 describe('Bots', () => {
+  test('a Bot with no Chips after a Hand is removed and its Seat is free', () => {
+    const withBot = ok(addBot(tableOf('a', 'b'), 'a', 'bot'));
+    const broke = { ...withBot, players: withBot.players.map((p) => (p.bot ? { ...p, chips: 10 } : p)) };
+    const allIn = (g: GameState): GameState => {
+      let current = g;
+      while (current.hand!.street !== 'complete') {
+        const { toAct, legal } = current.hand!;
+        current = ok(act(current, toAct!, { type: legal!.actions.includes('all-in') ? 'all-in' : 'call' }));
+      }
+      return current;
+    };
+    const results = Array.from({ length: 20 }, (_, i) => allIn(deal(broke, (n) => i % n)));
+    const busted = results.find((g) => !g.players.some((p) => p.bot));
+    expect(busted).toBeDefined();
+    expect(busted!.players.some((p) => p.bot)).toBe(false);
+    expect(ok(addBot(busted!, 'a', 'bot2')).players.find((p) => p.bot)!.seat).toBe(3);
+  });
+
   test('a Bot takes the lowest free Seat with a unique name, and only the Host adds one', () => {
     let game = ok(addBot(tableOf('a', 'b'), 'a', 'bot1'));
     game = ok(addBot(game, 'a', 'bot2'));
