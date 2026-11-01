@@ -470,6 +470,11 @@ describe('Bots', () => {
     expect(errorOf(addBot(game, 'p1', 'b1'))).toBe('seat-taken');
   });
 
+  test('a Bot cannot Sit Out', () => {
+    const game = ok(addBot(tableOf('ann', 'bob'), 'ann', 'b1'));
+    expect(errorOf(setSittingOut(game, 'b1', true))).toBe('invalid-setting');
+  });
+
   test('a Bot is never Host', () => {
     let game = ok(addBot(tableOf('ann', 'bob'), 'ann', 'b1'));
     expect(errorOf(transferHost(game, 'ann', 'b1'))).toBe('invalid-setting');

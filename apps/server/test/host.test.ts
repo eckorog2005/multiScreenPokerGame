@@ -153,3 +153,24 @@ test('the Host adds a Bot to the Table and removes it; others cannot', async (t)
   ann!.client.send({ type: 'host', command: { type: 'remove-bot', playerId: bot.playerId } });
   await tableViewWhere(table, (v) => v.seats.length === 2);
 });
+
+test('a Bot acts 1.5 seconds after its turn comes', async (t) => {
+  const { url, clock } = await start(t);
+  const { table, players } = await game(url, 'Ann');
+  const [ann] = players;
+  ann!.client.send({ type: 'host', command: { type: 'add-bot' } });
+  await tableViewWhere(table, (v) => v.seats.length === 2);
+
+  ann!.client.send({ type: 'host', command: { type: 'deal-hand' } });
+  const first = await tableViewWhere(table, dealt);
+  const bot = first.seats.find((s) => s.isBot)!;
+  if (first.hand!.toAct === ann!.playerId) {
+    ann!.client.send({ type: 'action', action: { type: 'call' } });
+    await tableViewWhere(table, (v) => v.hand!.toAct === bot.playerId);
+  }
+
+  clock.advance(1_499);
+  assert.deepEqual(tableViews(await settle(table)), []);
+  clock.advance(1);
+  await tableViewWhere(table, (v) => v.hand!.street !== 'preflop' || v.hand!.toAct !== bot.playerId);
+});

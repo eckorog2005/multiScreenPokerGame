@@ -46,3 +46,4 @@ export {
 export type { DealOptions, GameError, GameErrorCode, GamePlayer, GameState, JoinInput, StandingsRow } from './game.ts';
 export { playerView, tableView } from './views.ts';
 export type { ViewContext } from './views.ts';
+export { botAction } from './bot.ts';

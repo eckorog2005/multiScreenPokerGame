@@ -250,6 +250,7 @@ export function setTurnTimer(game: GameState, actorId: string, seconds: number |
 export function setSittingOut(game: GameState, playerId: string, sittingOut: boolean): GameState | GameError {
   const player = findPlayer(game, playerId);
   if (!player) return unknownPlayer(playerId);
+  if (player.bot && sittingOut) return fail('invalid-setting', 'A Bot cannot Sit Out');
   return { ...game, players: game.players.map((p) => (p === player ? { ...p, sittingOut } : p)) };
 }
 
