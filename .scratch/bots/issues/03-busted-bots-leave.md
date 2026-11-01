@@ -4,7 +4,7 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] A busted Bot is removed once the Hand completes.
 - [ ] Its Seat is free to take afterwards.
